@@ -172,7 +172,7 @@ def strike_heatmap(fighter_id, db, normalize=True):
     ))
 
     fig.update_layout(
-        title=f"Strike Targeting Heatmap (Fighter {stats['name']})",
+        title=f"Strike Targeting Heatmap",
         xaxis_showgrid=False,
         yaxis_showgrid=False,
         xaxis_visible=False,

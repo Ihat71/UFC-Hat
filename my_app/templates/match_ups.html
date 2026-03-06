@@ -7,22 +7,27 @@
 {% block main %}
 
 <style>
+td, th {
+    color: aliceblue;
+    font-weight: bold;
+}
+
 :root {
-    --fighter1-color: #1976d2;
-    --fighter2-color: #7b1fa2;
+    --fighter1-color: #0026ff;
+    --fighter2-color: #ff0000;
 }
 
 .fighter-blue {
     color: var(--fighter1-color);
 }
-.fighter-purple {
+.fighter-red {
     color: var(--fighter2-color);
 }
 
 .fighter-blue img {
     border: 4px solid var(--fighter1-color);
 }
-.fighter-purple img {
+.fighter-red img {
     border: 4px solid var(--fighter2-color);
 }
 
@@ -100,9 +105,9 @@
 }
 
 .vs-nav button.active {
-    background: #d32f2f;
+    background: #17add6;
     color: white;
-    border-color: #b71c1c;
+    border-color: #1f1cb7;
 }
 
 .vs-nav button:hover:not(.active) {
@@ -151,8 +156,15 @@
 
 .heatmaps {
     display: flex;
-    gap: 10px;
-    justify-content: center;
+    gap: 120px;
+    justify-content: flex-start;
+}
+
+.heatmaps div {
+    max-width: 150px;
+    justify-content: flex-start;
+    align-items: flex-start;
+    float: left;
 }
 
 .overall-container {
@@ -187,7 +199,7 @@
                    oninput="filterList('search1', 'results1')" autocomplete="off">
             <ul id="results1"></ul>
 
-            <div class="fighter-stats">
+            <div class="fighter-stats mt-3">
                 {% for key, val in fighter_1.items() %}
                     {% if key != 'id' and key != 'picture' and key != 'name' %}
                         <p><strong>{{ key|capitalize }}:</strong> {{ val }}</p>
@@ -213,7 +225,7 @@
                             <tr>
                                 <th class="fighter-blue">{{ fighter_1.name }}</th>
                                 <th>STAT</th>
-                                <th class="fighter-purple">{{ fighter_2.name }}</th>
+                                <th class="fighter-red">{{ fighter_2.name }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -221,7 +233,7 @@
                                 <tr>
                                     <td class="fighter-blue">{{ val }}</td>
                                     <td>{{ key|capitalize }}</td>
-                                    <td class="fighter-purple">{{ fighter_data_2[key] }}</td>
+                                    <td class="fighter-red">{{ fighter_data_2[key] }}</td>
                                 </tr>
                             {% endfor %}
                         </tbody>
@@ -229,11 +241,17 @@
                 </div>
 
                 <!-- Striking tab -->
-                <div id="striking-tab" class="vs-content">
-                    {{strike_fig | safe}}
+                <div id="striking-tab" class="vs-content bg-white">
+                    <div>
+                        {{strike_fig | safe}}
+                    </div>
                     <div class="heatmaps">
-                        {{heat1 | safe}}
-                        {{heat2 | safe}}
+                        <div>
+                            {{heat1 | safe}}
+                        </div>
+                        <div>
+                            {{heat2 | safe}}
+                        </div>
                     </div>
                     <div>
                         {{compare_plots[0] | safe}}
@@ -241,7 +259,7 @@
                 </div>
 
                 <!-- Grappling tab -->
-                <div id="grappling-tab" class="vs-content">
+                <div id="grappling-tab" class="vs-content bg-white">
                     {{grappling_fig | safe}}
                     <div>
                         {{compare_plots[1] | safe}}
@@ -249,9 +267,9 @@
                 </div>
 
                 <!-- Overall tab -->
-                <div id="overall-tab" class="vs-content">
+                <div id="overall-tab" class="vs-content bg-white">
                     {{career_fig | safe}}
-                    <div class="overall-container">
+                    <div class="overall-container bg-navy p-2 rounded-4">
                         <!-- Fighter 1 -->
                         <div class="overall-column fighter-blue">
                             <h3>{{fighter_1.name}}</h3>
@@ -271,7 +289,7 @@
                         </div>
 
                         <!-- Fighter 2 -->
-                        <div class="overall-column fighter-purple">
+                        <div class="overall-column fighter-red">
                             <h3>{{fighter_2.name}}</h3>
                             <h3>Score: {{global_scores[1]['global_rating_scaled'] | round(0)}}</h3>
                             <p>Strengths</p>
@@ -296,18 +314,18 @@
         </div>
 
         <!-- Fighter 2 -->
-        <div class="fighter-column dropdown fighter-purple">
+        <div class="fighter-column dropdown fighter-red">
             {% if fighter_2['picture'] %}
                 <img src="{{ fighter_2['picture'] }}">
             {% endif %}
-            <h3><a href="/fighter/{{ fighter_2.id }}">{{ fighter_2.name }}</a></h3>
+            <h3><a class="fighter-red" href="/fighter/{{ fighter_2.id }}">{{ fighter_2.name }}</a></h3>
 
             <input type="text" id="search2" name="fighter2"
                    value="{{ fighter2_input or fighter_2.name }}"
                    oninput="filterList('search2', 'results2')" autocomplete="off">
             <ul id="results2"></ul>
 
-            <div class="fighter-stats">
+            <div class="fighter-stats mt-3">
                 {% for key, val in fighter_2.items() %}
                     {% if key != 'id' and key != 'picture' and key != 'name' %}
                         <p><strong>{{ key|capitalize }}:</strong> {{ val }}</p>

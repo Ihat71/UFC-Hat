@@ -14,19 +14,21 @@
             {% endif %}
         </div>
         <div>
-            <div>
-                <h1>{{fighter['name']}}</h1>
+            <div class="glow-div p-4 bg-dark text-center">
+                <h1 class="align-middle">{{fighter['name']}}</h1>
             </div>
             <div>
-                <table style="margin: 0 auto;">
+                <table class="table table-dark table-striped table-hover table-sm">
                     <thead>
-                        <th>name</th>
-                        <th>height</th>
-                        <th>weight</th>
-                        <th>reach</th>
-                        <th>stance</th>
-                        <th>team</th>
-                        <th>age</th>
+                        <tr>
+                            <th>name</th>
+                            <th>height</th>
+                            <th>weight</th>
+                            <th>reach</th>
+                            <th>stance</th>
+                            <th>team</th>
+                            <th>age</th>
+                        </tr>
                     </thead>
                     <tbody>
                         <tr>
@@ -46,357 +48,538 @@
     <div>
         <div>
             <form action="" method = "POST">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button name="action" value="career">Career</button>
-            <button name="action" value="ranking">Ranking</button>
-            <button name="action" value="striking">Striking</button>
-            <button name="action" value="grappling">Grappling</button>
-            <button name="action" value="clinch">Clinch</button>
-            <button name="action" value="overall">Overall</button>
-            <button name="action" value="record">Fights</button>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-dark" name="action" value="career">Career</button>
+                <button class="btn btn-dark" name="action" value="Ranking">Ranking</button>
+                <button class="btn btn-dark" name="action" value="striking">Striking</button>
+                <button class="btn btn-dark" name="action" value="grappling">Grappling</button>
+                <button class="btn btn-dark" name="action" value="clinch">Clinch</button>
+                <button class="btn btn-dark" name="action" value="overall">Overall</button>
+                <button class="btn btn-dark" name="action" value="record">Fights</button>
             </form>
         </div>
-        <div>
+        <div class="container mt-4">
             {% if selection == "career" %}
             <div>
-                <div>
-                    <h3>UFC Fights</h3>
-                    <ul>
-                        <li>UFC fights: {{data_hash['ufc_fights']}}</li>
-                        <li>Win streak: {{data_hash['highest_win_streak']}}</li>
-                        <li>Record: {{data_hash['wins']}}-{{data_hash['draws']}}-{{data_hash['losses']}}</li>
-                    </ul>
-                </div>
-                <div>
-                    <h3>Record Partitions</h3>
-                    <ul>
-                        <li>Finishes: {{data_hash['finishes']}}</li>
-                        <li>Finish Rate: {{data_hash['finish_rate']}}</li>
-                        <li>Win Rate: {{data_hash['win_rate']}}</li>
-                        <li>KOs: {{data_hash['ko_tko']}}</li>
-                        <li>Subs: {{data_hash['subs']}}</li>
-                        <li>Decisions: {{data_hash['decisions']}}</li>
-                    </ul>
-                </div>
-                <div>
-                    <h3>Misc</h3>
-                    <ul>
-                        <li>Debut: {{data_hash['debut']}}</li>
-                        <li>Title Fights: {{data_hash['title_fights']}}</li>
-                    </ul>
-                </div>
-                <div>
-                    <h3>Recent</h3>
-                    <ul>
-                        <li>Last Fight: <a href="/versus/{{last_fight['fight_id']}}/"></a></li>
-                        {% for fight in last_5 %}
-                            {% if fight['result'] == "win" %}
-                            <li><a href="/versus/{{fight['fight_id']}}/" title="{{fight['fighter_1']}} vs {{fight['fighter_2']}}">&#9989;</a></li>
-                            {% else %}
-                            <li><a href="/versus/{{fight['fight_id']}}/" title="{{fight['fighter_1']}} vs {{fight['fighter_2']}}">&#10060;</a></li>
-                            {% endif%}
-                        {% endfor %}
-                    </ul>
-                </div>
-                <div>
-                    <h3>Time</h3>
-                    <ul>
-                        <li>Time fought: {{data_hash['cage_time']}}</li>
-                        <li>Average Fight Time: {{data_hash['average_fight_time']}}</li>
-                    </ul>
+                <div class="row g-4">
+                    <div class="col-12 col-md-6 ">
+                        <div class="p-4 bg-dark text-white rounded-4 shadow">
+                            <h3>UFC Fights</h3>
+                            <ul class="list-inline mb-0" style="margin: 0 auto">
+                                <li>UFC fights: {{data_hash['ufc_fights']}}</li>
+                                <li>UFC Win streak: {{data_hash['highest_win_streak']}}</li>
+                                <li>Record: {{data_hash['wins']}}-{{data_hash['losses']}}-{{data_hash['draws']}}</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6 ">
+                        <div class="p-4 bg-dark text-white rounded-4 shadow">
+                            <h3>Record Partitions</h3>
+                            <ul class="list-inline mb-0" style="margin: 0 auto">
+                                <li class="list-inline-item">Finishes: {{data_hash['finishes']}}</li>
+                                <li class="list-inline-item">Finish Rate: {{data_hash['finish_rate']}}</li>
+                                <li class="list-inline-item">Win Rate: {{data_hash['win_rate']}}</li>
+                                <li class="list-inline-item">KOs: {{data_hash['ko_tko']}}</li>
+                                <li class="list-inline-item">Subs: {{data_hash['subs']}}</li>
+                                <li class="list-inline-item">Decisions: {{data_hash['decisions']}}</li>
+                            </ul>
+                        </div>
+                    </div>
+
+
+                    <div class="col-12 col-md-6 ">
+                        <div class="p-4 bg-dark text-white rounded-4 shadow">
+                            <h3>Misc</h3>
+                            <ul class="list-inline mb-0" style="margin: 0 auto">
+                                <li>Debut: {{data_hash['debut']}}</li>
+                                <li>Title Fights: {{data_hash['title_fights']}}</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6 ">
+                        <div class="p-4 bg-dark text-white rounded-4 shadow">
+                            <h3>Recent</h3>
+                            <ul class="list-inline mb-0" style="margin: 0 auto">
+                                <li>Last 5 Fights:</li>
+                                {% for fight in last_5 %}
+                                    {% if fight['result'] == "win" %}
+                                    <li class="list-inline-item"><a href="/versus/{{fight['fight_id']}}/" title="{{fight['fighter_1']}} vs {{fight['fighter_2']}}">&#9989;</a></li>
+                                    {% else %}
+                                    <li class="list-inline-item"><a href="/versus/{{fight['fight_id']}}/" title="{{fight['fighter_1']}} vs {{fight['fighter_2']}}">&#10060;</a></li>
+                                    {% endif%}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+
+
+                    <div class="col-12">
+                        <div class="p-4 bg-dark text-white rounded-4 shadow">
+                            <h3>Time</h3>
+                            <ul class="list-inline mb-0" style="margin: 0 auto">
+                                <li>Time fought: {{data_hash['cage_time']}}</li>
+                                <li>Average Fight Time: {{data_hash['average_fight_time']}}</li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
-            {% elif selection == "ranking" %}
-            <div>
-                <div>
-                    <h3>Current elo: {{elo_data_hash['elo']}}</h3>
-                    <p>{{elo_data_hash['latest_fight']}}</p>
-                </div>
-                <div>
-                    <!-- {% if elo_data_hash['peak_elo'] > elo_data_hash['elo'] %}
-                    <h3>Peak elo: {{elo_data_hash['peak_elo']}}</h3>
-                    {% else %}
-                    <h3>Peak elo: {{elo_data_hash['elo']}}</h3>
-                    {% endif %} -->
-                    <h3>Peak elo: {{elo_data_hash['peak_elo']}}</h3>
-                    <p>peak fight date: {{elo_data_hash['peak_fight']}}</p>
-                </div>
-                <div>
+            {% elif selection == "Ranking" %}
+            <div class="d-flex gap-4 flex-row align-items-center justify-content-center">
+                <div class="d-flex flex-column" style="width:300px;">
+                    <div class="m-2 p-4 bg-dark text-white rounded-4 shadow">
+                        <h3>Current elo: {{elo_data_hash['elo']}}</h3>
+                        <p>{{elo_data_hash['latest_fight']}}</p>
+                    </div>
+                    <div class="m-2 p-4 bg-dark text-white rounded-4 shadow">
+                        <!-- {% if elo_data_hash['peak_elo'] > elo_data_hash['elo'] %}
+                        <h3>Peak elo: {{elo_data_hash['peak_elo']}}</h3>
+                        {% else %}
+                        <h3>Peak elo: {{elo_data_hash['elo']}}</h3>
+                        {% endif %} -->
+                        <h3>Peak elo: {{elo_data_hash['peak_elo']}}</h3>
+                        <p>peak fight date: {{elo_data_hash['peak_fight']}}</p>
+                    </div>
+
                     {% set elo_drop = elo_data_hash['peak_elo'] - elo_data_hash['elo'] %}
                     {% if elo_drop > 45 %}
-                        <div>
-                            <p>
-                                This fighter is currently OUT OF PRIME. Thus, his stats and overall rankings will be lower 
-                                at present then they would have been when they were at their prime.
-                            </p>
-                        </div>
+                    <div class="m-2 p-4 bg-dark text-white rounded-4 shadow">
+                        <p>
+                            This fighter is currently OUT OF PRIME. Thus, his stats and overall Rankings will be lower 
+                            at present then they would have been when they were at their prime.
+                        </p>
+                    </div>
                     {% elif elo_drop < 45 and elo_drop > 15%}
-                        <div>
-                            <p>
-                                This fighter is not at his peak currently, and thus his stats and rankings are different than if he were to have been at his peak
-                            </p>
-                        </div>       
+                    <div class="m-2 p-4 bg-dark text-white rounded-4 shadow">
+                        <p>
+                            This fighter is not at his peak currently, and thus his stats and Rankings are different than if he were to have been at his peak
+                        </p>
+                    </div>
                     {% endif %}
+
                 </div>
-            </div>
-            <div>
-            {{ plot|safe }}
-            </div>
-            <div>
-            {% elif selection == "striking" %}
-                    <div>
-                        <div> <h2>Boxing: {{data_hash['Boxing'] | round(1)}}</h2> <h2>KickBoxing: {{data_hash['KickBoxing'] | round(1)}}</h2></div>
+                <div class="flex-grow-1" style="max-width: 700px;">
+                    <div class="p-4 bg-dark text-white rounded-4 shadow graph-container">
                         {{ plot|safe }}
                     </div>
-                    <div>
-                        <h2> Relevent Strike Data </h2>
-                        <div>
-                            <h3>Volume: Total Strikes Landed </h3>
-                            <ul>
-                                <li>rank: {{data_hash['tsl_scaled'] | round(1) }}</li>
-                                <li>value: {{data_hash['tsl']}} strikes </li>
-                            </ul>
+                </div>
+            </div>
+            {% elif selection == "striking" %}
+            <div class="container">
+                <div class="d-flex gap-4 flex-column align-items-center justify-content-between">
+                    <div class="row gx-3" style="width:500px;"> 
+                        <span class="col m-2 p-2 bg-dark text-white rounded-4 shadow">
+                            <h3>Boxing: {{data_hash['Boxing'] | round(1)}}</h3>
+                        </span>
+                        <span class="col m-2 p-2 bg-dark text-white rounded-4 shadow"> 
+                            <h3>KickBoxing: {{data_hash['KickBoxing'] | round(1)}}</h3>
+                        </span>
+                    </div>
+                    <div class="flex-grow-1" style="max-width: 800px;">
+                        <div class="p-4 bg-dark text-white rounded-4 shadow graph-container">
+                            {{ plot|safe }}
                         </div>
-                        <div>
-                            <h3> Significant Strikes Landed per Minute</h3>
-                            <li>rank: {{data_hash['tsl_pm_scaled'] | round(1)}}</li>
-                            <li>value: {{data_hash['tsl_pm'] | round(4)}}</li>
+                    </div>
+                </div>
+            </div>
+            <div class="container mt-5">
+
+                <h1 style="font-weight: bold;"> Relevent Strike Data </h1>
+
+                <div class="data-grid p-2">
+                    <div class="m-2 p-4 bg-dark text-white rounded-4 shadow">
+                        <h3>Volume: Total Strikes Landed </h3>
+                        <ul class="list-inline mb-0 row gx-5" style="margin: 0 auto">
+                            <div class="col rounded-3 m-2" style="background: #3a3a3a;">
+                                <p>Total Strikes Landed Rank</p>
+                                <li>Rank: {{data_hash['tsl_scaled'] | round(1) }}</li>
+                                <li>Value: {{data_hash['tsl']}} strikes </li>
+                            </div>
+                        </ul>
+                    </div>
+
+                    <div class="m-2 p-4 bg-dark text-white rounded-4 shadow">
+                        <h3> Significant Strikes Landed per Minute</h3>
+                        <ul class="list-inline mb-0 row gx-5" style="margin: 0 auto">
+                            <div class="col rounded-3 m-2" style="background: #3a3a3a;">
+                                <p>Significant Strikes per Minute</p>
+                                <li>Rank: {{data_hash['tsl_pm_scaled'] | round(1)}}</li>
+                                <li>Value: {{data_hash['tsl_pm'] | round(4)}}</li>
+                            </div>
+                        </ul>
+                    </div>
+
+                    <div class="m-2 p-4 bg-dark text-white rounded-4 shadow">
+                        <h3>Absorbtion: Total Strikes Absorbed per Minute</h3>
+                        <ul class="list-inline mb-0 row gx-5" style="margin: 0 auto">
+                            <div class="col rounded-3 m-2" style="background: #3a3a3a;">
+                                <p>Strikes Absorbed per Minute</p>
+                                <li>Rank: {{data_hash['SApM_scaled'] | round(1) }}</li>
+                                <li>Value: {{data_hash['SApM']}}/min </li>
+                            </div>
+                        </ul>
+                    </div>
+
+                    <div class="m-2 p-4 bg-dark text-white rounded-4 shadow">
+                        <h3>Power: Knockdowns and KOs per Minute</h3>
+                        <ul class="list-inline mb-0 row gx-5" style="margin: 0 auto">
+                            <div class="col rounded-3 m-2" style="background: #3a3a3a;">
+                                <p>KO per Minute</p>
+                                <li>KO Rank: {{data_hash['ko_pm_scaled'] | round(1) }}</li>
+                                <li>KO / min: {{data_hash['ko_pm'] | round(3)}}/min </li>
+                            </div>
+                            <div class="col rounded-3 m-2" style="background: #3a3a3a;">
+                                <p>Knockdowns per Minute</p>
+                                <li>KD Rank: {{data_hash['kd_pm_scaled'] | round(1) }}</li>
+                                <li>KD / min: {{data_hash['kd_pm'] | round(3)}}/min </li>
+                            </div>
+                        </ul>
+                    </div>
+
+                    <div class="m-2 p-4 bg-dark text-white rounded-4 shadow">
+                        <h3>Leg Kicks: Leg kicks Landed and Accuracy</h3>
+                        <ul class="list-inline mb-0 row gx-5" style="margin: 0 auto">
+                            <div class="col rounded-3 m-2" style="background: #3a3a3a;">
+                                <p>Leg Kicks Landed</p>
+                                <li>Rank: {{data_hash['sdll_scaled'] | round(1) }}</li>
+                                <li>Value: {{data_hash['sdll']}} significant kicks </li>
+                            </div>
+                            <div class="col rounded-3 m-2" style="background: #3a3a3a;">
+                                <p>Leg Kicks Accuracy</p>
+                                <li>Rank: {{data_hash['sdl_acc_scaled'] | round(1) }}</li>
+                                <li>Value: {{(data_hash['sdl_acc'] * 100) | round(1)}}% </li>
+                            </div>
+                        </ul>
+                    </div>
+
+                    <div class="m-2 p-4 bg-dark text-white rounded-4 shadow">
+                        <h3>Accuracy: Significant Strike Accuracy</h3>
+                        <ul class="list-inline mb-0 row gx-5" style="margin: 0 auto">
+                            <div class="col rounded-3 m-2" style="background: #3a3a3a;">
+                                <p>Significant Strike Accuracy</p>
+                                <li>Rank: {{data_hash['ss_acc_scaled'] | round(1) }}</li>
+                                <li>Value: {{(data_hash['ss_acc'] * 100) | round(1)}}% </li>
+                            </div>
+                        </ul>
+                    </div>
+
+                    <div class="m-2 p-4 bg-dark text-white rounded-4 shadow">
+                        <h3>Head Hunting</h3>
+                        <ul class="list-inline mb-0 row gx-5" style="margin: 0 auto">
+                            <div class="col rounded-3 m-2" style="background: #3a3a3a;">
+                                <p>Head Strike Quantity</p>
+                                <li>Rank: {{data_hash['sdhl_scaled']}}</li>
+                                <li>Value: {{data_hash['sdhl'] | round(1) }}</li>
+                            </div>
+                            <div class="col rounded-3 m-2" style="background: #3a3a3a;">
+                                <p>Head Strike Accuracy</p>
+                                <li>Rank: {{data_hash['sdh_acc_scaled'] | round(1) }}</li>
+                                <li>Value: {{(data_hash['sdh_acc'] * 100) | round(1)}}%</li>
+                            </div>
+                        </ul>
+                    </div>
+
+                    <div class="m-2 p-4 bg-dark text-white rounded-4 shadow">
+                        <h3>Body Ripping</h3>
+                        <ul class="list-inline mb-0 row gx-5" style="margin: 0 auto">
+                            <div class="col rounded-3 m-2" style="background: #3a3a3a;">
+                                <p>Body Strike Quantity</p>
+                                <li>Rank: {{data_hash['sdbl_scaled'] | round(1) }}</li>
+                                <li>Value: {{data_hash['sdbl'] | round(1)}}</li>
+                            </div>
+                            <div class="col rounded-3 m-2" style="background: #3a3a3a;">
+                                <p>Body Strike Accuracy</p>
+                                <li>Rank: {{data_hash['sdb_acc_scaled'] | round(1) }}</li>
+                                <li>Value: {{ (data_hash['sdb_acc'] * 100) | round(1)}}%</li>
+                            </div>
+                        </ul>
+                    </div>
+
+                    <div class="m-2 p-4 bg-dark text-white rounded-4 shadow" style="width:360px; height:230px; float: center;">
+                        <h3>Striking Defence</h3>
+                        <ul class="list-inline mb-0 row gx-5" style="margin: 0 auto">
+                            <div class="col rounded-3 m-2" style="background: #3a3a3a;">
+                                <p>Distance Striking Defence</p>
+                                <li>Rank: {{data_hash['str_def_Scaled'] | round(1) }}</li>
+                                <li>Value: {{(data_hash['str_def']*100) | round(1)}}%</li>
+                            </div>
+                        </ul>
+                    </div>
+                </div>
+                <div class="m-5 p-4 bg-dark text-white rounded-4 shadow align-items-center d-flex flex-column justify-content-center justify-items-center">
+                    <h3>Distance Strike Partitions</h3>
+                    <div class="flex-grow-1" style="max-width: 700px;">
+                        <div class="p-4 bg-dark text-white rounded-4 shadow graph-container">
+                            {{ heat_map | safe }}
                         </div>
-                        <div>
-                            <h3>Absorbtion: Total Strikes Absorbed per Minute</h3>
-                            <ul>
-                                <li>rank: {{data_hash['SApM_scaled'] | round(1) }}</li>
-                                <li>value: {{data_hash['SApM']}}/min </li>
-                            </ul>
+                    </div>
+                </div>
+            </div>
+            {% elif selection == "grappling" %}
+            <div class="container">
+                <div class="d-flex gap-4 flex-column align-items-center justify-content-center justify-items-center">
+                    <div class="row gx-3" style="width:700px;"> 
+                        <span class="col m-2 p-2 bg-dark text-white rounded-4 shadow">
+                            <h3>Wrestling: {{data_hash['Wrestling'] | round(1)}}</h3>
+                        </span>
+                        <span class="col m-2 p-2 bg-dark text-white rounded-4 shadow"> 
+                            <h3>BJJ: {{data_hash['BJJ']| round(1)}}</h3>
+                        </span>
+                        <span class="col m-2 p-2 bg-dark text-white rounded-4 shadow"> 
+                            <h3>GNP: {{data_hash['GNP']| round(1)}}</h3>
+                        </span>
+                    </div>
+
+                    <div class="flex-grow-1" style="max-width: 800px;">
+                        <div class="p-4 bg-dark text-white rounded-4 shadow graph-container">
+                            {{plot | safe}}
                         </div>
-                        <div>
-                            <h3>Power: Knockdowns and KOs per Minute</h3>
-                            <ul>
-                                <li>KO rank: {{data_hash['ko_pm_scaled'] | round(1) }}</li>
-                                <li>KnockDown rank: {{data_hash['kd_pm_scaled'] | round(1) }}</li>
-                                <li> KO: {{data_hash['ko_pm'] | round(3)}}/min </li>
-                                <li> KD: {{data_hash['kd_pm'] | round(3)}}/min </li>
-                            </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="container mt-5">
+
+                <h1 style="font-weight: bold;"> Relevant Grappling Data </h1>
+
+                <div class="data-grid-g p-2">
+
+                    <div class="p-4 bg-dark text-white rounded-4 shadow">
+                        <h3>Sub Attempts Faced per Minute</h3>
+                        <ul class="list-inline mb-0 row gx-5" style="margin: 0 auto">
+                            <div class="col rounded-3 m-2" style="background: #3a3a3a;">
+                                <p>Sub Attempts Faced</p>
+                                <li>Value: {{data_hash['sub_attempts_faced_pm']| round(4)}} / min</li>
+                            </div>
+                        </ul>
+                    </div>
+
+                    <div class="p-4 bg-dark text-white rounded-4 shadow">
+                        <h3>Subs Attempted</h3>
+                        <ul class="list-inline mb-0 row gx-5" style="margin: 0 auto">
+                            <div class="col rounded-3 m-2" style="background: #3a3a3a;">
+                                <p>Submission Attempts</p>
+                                <li>Rank: {{data_hash['sm_scaled']| round(1)}}</li>
+                                <li>Value: {{data_hash['sm']| round(1)}} sub attempts</li>
+                            </div>
+                        </ul>
+                    </div>
+
+                    <div class="p-4 bg-dark text-white rounded-4 shadow">
+                        <h3>Subs per Minute</h3>
+                        <ul class="list-inline mb-0 row gx-5" style="margin: 0 auto">
+                            <div class="col rounded-3 m-2" style="background: #3a3a3a;">
+                                <p>Submissions per Minute</p>
+                                <li>Rank: {{data_hash['subs_pm_scaled']| round(1)}}</li>
+                                <li>Value: {{data_hash['subs_pm']| round(4)}} / min</li>
+                            </div>
+                        </ul>
+                    </div>
+
+                    <div class="p-4 bg-dark text-white rounded-4 shadow">
+                        <h3>Takedowns Landed</h3>
+                        <ul class="list-inline mb-0 row gx-5" style="margin: 0 auto">
+                            <div class="col rounded-3 m-2" style="background: #3a3a3a;">
+                                <p>Takedowns Landed</p>
+                                <li>Rank: {{data_hash['tdl_scaled']| round(1)}}</li>
+                                <li>Value: {{data_hash['tdl']| int}} takedowns</li>
+                            </div>
+                        </ul>
+                    </div>
+
+                    <div class="p-4 bg-dark text-white rounded-4 shadow">
+                        <h3>Takedown Accuracy</h3>
+                        <ul class="list-inline mb-0 row gx-5" style="margin: 0 auto">
+                            <div class="col rounded-3 m-2" style="background: #3a3a3a;">
+                                <p>Takedown Accuracy</p>
+                                <li>Rank: {{data_hash['tk_acc_scaled']| round(1)}}</li>
+                                <li>Value: {{(data_hash['tk_acc'] * 100)| round(1)}}%</li>
+                            </div>
+                        </ul>
+                    </div>
+
+                    <div class="p-4 bg-dark text-white rounded-4 shadow">
+                        <h3>Control Time</h3>
+                        <ul class="list-inline mb-0 row gx-5" style="margin: 0 auto">
+                            <div class="col rounded-3 m-2" style="background: #3a3a3a;">
+                                <p>Total Control Time</p>
+                                <li>Rank: {{data_hash['control_time_scaled']| round(1)}}</li>
+                                <li>Value: {{data_hash['control_time']| int}} minutes</li>
+                            </div>
+                        </ul>
+                    </div>
+
+                    <div class="p-4 bg-dark text-white rounded-4 shadow">
+                        <h3>Takedown Defense</h3>
+                        <ul class="list-inline mb-0 row gx-5" style="margin: 0 auto">
+                            <div class="col rounded-3 m-2" style="background: #3a3a3a;">
+                                <p>Takedown Defense</p>
+                                <li>Rank: {{data_hash['td_def_scaled']| round(1)}}</li>
+                                <li>Value: {{(data_hash['td_def'] * 100)| round(1)}}%</li>
+                            </div>
+                        </ul>
+                    </div>
+
+                    <div class="p-4 bg-dark text-white rounded-4 shadow">
+                        <h3>Effective Ground and Pound</h3>
+                        <ul class="list-inline mb-0 row gx-5" style="margin: 0 auto">
+                            <div class="col rounded-3 m-2" style="background: #3a3a3a;">
+                                <p>Effective GNP</p>
+                                <li>Rank: {{data_hash['effective_gnp_scaled'] | round(1) }}</li>
+                                <li>Value: {{data_hash['effective_gnp'] | round(3)}}</li>
+                            </div>
+                        </ul>
+                    </div>
+                    <div class="p-4 bg-dark text-white rounded-4 shadow">
+                        <h3>GNP per Minute</h3>
+                        <ul class="list-inline mb-0 row gx-5" style="margin: 0 auto">
+                            <div class="col rounded-3 m-2" style="background: #3a3a3a;">
+                                <p>Ground and Pound per Minute</p>
+                                <li>Rank: {{data_hash['gnp_pm_scaled'] | round(1)}}</li>
+                                <li>Value: {{data_hash['gnp_pm'] | round(4)}} / GNP min</li>
+                            </div>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+            {% elif selection == "clinch" %}
+            <div class="container">
+                <div class="d-flex gap-4">
+
+                    <div class="flex-grow-1 p-4 bg-dark text-white rounded-4 shadow d-flex flex-column gap-3 justify-content-center">
+
+                        <div class="p-3 rounded-3" style="background:#2f2f2f;">
+                            <h2>Muay Clinch: <br> {{data_hash['Muay'] | round(1)}}</h2>
                         </div>
-                        <div>
-                            <h3>Leg Kicks: Leg kicks Landed and Accuracy</h3>
-                            <ul>
-                                <li>Leg kicks landed rank: {{data_hash['sdll_scaled'] | round(1) }}</li>
-                                <li>Leg kicks accuracy rank: {{data_hash['sdl_acc_scaled'] | round(1) }}</li>
-                                <li>Leg Kicks Landed: {{data_hash['sdll']}} significant kicks </li>
-                                <li>Leg Kicks Accuracy: {{data_hash['sdl_acc'] * 100}}% </li>
-                            </ul>
+
+                        <div class="p-3 rounded-3" style="background:#3a3a3a;">
+                            <h4>Clinch Strikes per Minute</h4>
+                            <div>
+                                <ul class="list-inline mb-0 row gx-5" style="margin: 0 auto">
+                                    <li>{{data_hash['clinch_strikes_pm'] | round(4)}} / min</li>
+                                </ul>
+                            </div>
                         </div>
-                        <div>
-                            <h3>Accuracy: Significant Strike Accuracy</h3>
-                            <ul>
-                                <li>rank: {{data_hash['ss_acc_scaled'] | round(1) }}</li>
-                                <li>value: {{data_hash['ss_acc'] * 100 | round(1)}}% </li>
-                            </ul>
-                        </div>
-                        <div>
-                            <h3>Head Hunting</h3>
-                            <ul>
-                                <li>
-                                    significant head strike quanitiy, head hunter
-                                    <p>
-                                        rank: {{data_hash['sdhl_scaled']}}
-                                    </p>
-                                    <p>
-                                        value: {{data_hash['sdhl']}}
-                                    </p>
-                                </li>
-                                <li> 
-                                    significant head strike accuracy
-                                    <p>
-                                        rank: {{data_hash['sdh_acc_scaled']}}
-                                    </p>
-                                    <p>
-                                        value: {{data_hash['sdh_acc'] * 100}}% 
-                                    </p>
-                                </li>
-                            </ul>
-                        </div>
-                        <div>
-                            <h3>Body Ripping</h3>
-                            <ul>
-                                <li>
-                                    significant body strike quanitiy, body ripper
-                                    <p>
-                                        rank: {{data_hash['sdbl_scaled'] | round(1) }}
-                                    </p>
-                                    <p>
-                                        value: {{data_hash['sdbl']}}
-                                    </p>
-                                </li>
-                                <li> 
-                                    significant body strike accuracy
-                                    <p>
-                                        rank: {{data_hash['sdb_acc_scaled'] | round(1) }}
-                                    </p>
-                                    <p>
-                                        value: {{data_hash['sdb_acc'] * 100}}% 
-                                    </p>
-                                </li>
-                            </ul>
-                        </div>
-                        <div>
-                            <h3>Defence: Distance Striking Defence Percentage</h3>
-                            <ul>
-                                <li>rank: {{data_hash['str_def_Scaled'] | round(1) }}</li>
-                                <li>value: {{(data_hash['str_def']*100) | round(1)}}% </li>
-                            </ul>
-                        </div>
-                        <div>
-                            <h3>Distance Strike Partitions</h3>
-                            <div align="center">
-                            {{ heat_map | safe}}
+
+                        <div class="p-3 rounded-3" style="background:#3a3a3a;">
+                            <h4>Effective Clinch Strike Accuracy</h4>
+                            <div class="col rounded-3 m-2" style="background: #3a3a3a;">
+                                <ul class="list-inline mb-0 row gx-5" style="margin: 0 auto">
+                                    <li>{{(data_hash['effective_accuracy'] * 100) | round(2)}}%</li>
+                                </ul>
                             </div>
                         </div>
                     </div>
-            {% elif selection == "grappling" %}
-            <div>
-                <div><h2>Wrestling: {{data_hash['Wrestling'] | round(1)}}</h2> <h2>BJJ: {{data_hash['BJJ']| round(1)}}</h2> <h2>GNP: {{data_hash['GNP']| round(1)}}</h2></div>
-                {{plot | safe}}
-            </div>
-            <div>
-                <h2>BJJ</h2>
-                <div>
-                    <h2>Sub Attempts Faced per Minute</h2>
-                    <ul>
-                        <li>value: {{data_hash['sub_attempts_faced_pm']| round(4)}} / min</li>
-                    </ul>
-                </div>
-                <div>
-                    <h2>Subs attempted: </h2>
-                    <ul>
-                        <li>rank: {{data_hash['sm_scaled']| round(1)}}</li>
-                        <li>value: {{data_hash['sm']| round(1)}} sub attempts</li>
-                    </ul>
-                </div>
-                <div>
-                    <h2>Subs per Minute</h2>
-                    <ul>
-                        <li>rank: {{data_hash['subs_pm_scaled']| round(1)}}</li>
-                        <li>value: {{data_hash['subs_pm']| round(4)}} / min</li>
-                    </ul>
-                </div>
-            </div>
-            <div>
-                <h2>Wrestling</h2>
-                <div>
-                    <h2>Takedowns Landed</h2>
-                    <ul>
-                        <li>rank: {{data_hash['tdl_scaled']| round(1)}}</li>
-                        <li>value: {{data_hash['tdl']| int}} takedowns</li>
-                    </ul>
-                </div>
-                <div>
-                    <h2>Take down accuracy</h2>
-                    <ul>
-                        <li>rank: {{data_hash['tk_acc_scaled']| round(1)}}</li>
-                        <li>value: {{(data_hash['tk_acc'] * 100)| round(1)}}%</li>
-                    </ul>
-                </div>
-                <div>
-                    <h2>Control Time</h2>
-                    <ul>
-                        <li>rank: {{data_hash['control_time_scaled']| round(1)}}</li>
-                        <li>value: {{data_hash['control_time']| int}} minutes</li>
-                    </ul>
-                </div>
-                <div>
-                    <h2>Takedown Defense</h2>
-                    <ul>
-                        <li>rank: {{data_hash['td_def_scaled']| round(1)}}</li>
-                        <li>value: {{(data_hash['td_def'] * 100)| round(1)}}%</li>
-                    </ul>
-                </div>
-            </div>
-            <div>
-                <h2> Ground and Pound</h2>
-                <div>
-                    <h2>Effective GNP (arbitrary): </h2>
-                    <ul>
-                        <li>rank: {{data_hash['effective_gnp_scaled'] | round(1) }}</li>
-                        <li>value: {{data_hash['effective_gnp'] | round(3)}}</li>
-                    </ul>
-                </div>
-                <div>
-                    <h2>GNP per minute</h2>
-                    <ul>
-                        <li>rank: {{data_hash['gnp_pm_scaled'] | round(1)}}</li>
-                        <li>value: {{data_hash['gnp_pm'] | round(4)}}</li>
-                    </ul>
-                </div>
-            </div>
-            {% elif selection == "clinch" %}
-            <div>
-                <div><h2> Muay Clinch: {{data_hash['Muay'] | round(1)}}</h2></div>
-                {{plot | safe}}
-            </div>
-            <div>
-                <p>Disclaimer: head and body hunter just describe how many times the fighters went for the head and body in clinch. It doesn't mean much else. </p>
-            </div>
-            <div>
-                <h3>Clinch Strikes per Minue: {{data_hash['clinch_strikes_pm'] | round(4)}} / min </h3>
-            </div>
-            <div>
-                <h3>Effective Clinch Strike Accuracy: {{(data_hash['effective_accuracy'] * 100) | round(2)}}% </h3>
-            </div>
-            {% elif selection == "overall" %}
-                <div> Overall Global Score
-                    <p>We will give some grace to more one dimentsional fighters if they at least have good defence in the arts they lack</p>
-                </div>
-                <div>
-                </div>
-                <div>
-                    <div>
-                        <h3>Global Rating: {{data_hash['global_rating_scaled'] | round(0)}}</h3>
-                        <h3>Global value: {{data_hash['global_rating'] | round(0)}}</h3>
-                    </div>
-                    <div>
-                        {{ plot | safe}}
-                    </div>
 
-                    <div>
-                        <h2>Career Relevant Stats</h2>
-                        <div>
-                            <h3>Fall Off Rate: {{data_hash['fall_off_rate'] | round(1)}}</h3>
-                            <h3>Fall Off Rate Scaled (higher rating means higher fall off): {{data_hash['fall_off_rate_scaled'] | round(1)}}</h3>
-                            <h3>Title Score: {{data_hash['title_score'] | round(1)}}</h3>
-                            <h3>Win Score Scaled: {{data_hash['win_score_scaled'] | round(1)}}</h3>
-                            <h3>Elo Score Scaled (who you beat and your own elo): {{data_hash['elo_score_scaled'] | round(1)}}</h3>
-                            <h3>Highest Win Streak Scaled: {{data_hash['highest_win_streak_scaled'] | round(1)}}</h3>
-                            <h3>Finish Rate Scaled: {{data_hash['finish_rate_scaled'] | round(1)}}</h3>
-                            <h3>Peak Elo Scaled: {{data_hash['peak_elo_scaled'] | round(1)}}</h3>
-                            <h3>Current Elo Scaled: {{data_hash['elo_scaled'] | round(1)}}</h3>
-
+                    <div class="flex-grow-2">
+                        <div class="p-4 bg-dark text-white rounded-4 shadow graph-container h-100">
+                            {{plot | safe}}
                         </div>
                     </div>
 
-                    <form id="numForm" method="POST" action="{{ url_for('fighter', id=id) }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <label for="num">Pick number of strengths/weaknesses:</label>
-                        <input type="number" id="num" name="num" min="1" max="25" value="{{ quantity }}">
-                        <button type="submit" name="action" value="overall">Submit</button>
-                    </form>
-
-                    <div>
-                        <h2> TOP {{quantity}} Strengths </h2>
-                        <ol>
-                        {% for key, value in strengths.items() %}
-                            <li> {{key}} : {{value}} </li>
-                        {% endfor %}
-                        </ol>
+                </div>
+            </div>
+            <div class="mt-5">
+                <p>Disclaimer: head and body hunter just describe how many times the fighters went for the head and body in clinch. It doesn't mean much else. </p>
+            </div>
+            {% elif selection == "overall" %}
+            <div class="container">
+                <h1>Overall Global Score</h1>
+                <div>
+                    <p>We will give some grace to more one dimentsional fighters if they at least have good defence in the arts they lack</p>
+                </div>
+                <div class="d-flex gap-4 flex-column align-items-center justify-content-center justify-items-center">
+                    <div class="row gx-3" style="width:700px;">
+                        <span class="col m-2 p-2 bg-dark text-white rounded-4 shadow">
+                            <h3>Global Rating: {{data_hash['global_rating_scaled'] | round(0)}}</h3>
+                        </span>
+                        <span class="col m-2 p-2 bg-dark text-white rounded-4 shadow">
+                            <h3>Global Value: {{data_hash['global_rating'] | round(0)}}</h3>
+                        </span>
                     </div>
-                    <div>
-                        <h2> TOP {{quantity}} Weaknesses </h2>
-                        <ol>
-                        {% for key, value in weaknesses.items() %}
-                            <li> {{key}} : {{value}} </li>
-                        {% endfor %}
-                        </ol>
+                    <div class="flex-grow-1" style="max-width: 800px;">
+                        <div class="p-4 bg-dark text-white rounded-4 shadow graph-container">
+                            {{plot | safe}}
+                        </div>
+                    </div>
+
+                    <div class="container mt-4">
+                        <h2 class="mb-3">Career Relevant Stats</h2>
+                        <div class="container p-4 bg-dark rounded-4" style="max-width: 500px;">
+                            <table class="table table-dark table-sm table-hover">
+                                <tbody>
+                                    <tr>
+                                        <td>Fall Off Rate Scaled <br> <p>(How hard the fighter fell off)</p></td>
+                                        <td class="text-end fw-bold">{{data_hash['fall_off_rate_scaled'] | round(1)}}</td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>Title Score Scaled <br> <p>(Impressiveness of the fighter's title run)</p></td>
+                                        <td class="text-end fw-bold">{{data_hash['title_score_scaled'] | round(1)}}</td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>Win Score <br> <p>(How well the fighter wins the fights they win (lol) )</p></td>
+                                        <td class="text-end fw-bold">{{data_hash['win_score_scaled'] | round(1)}}</td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>Highest Win Streak Scaled</td>
+                                        <td class="text-end fw-bold">{{data_hash['highest_win_streak_scaled'] | round(1)}}</td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>Finish Rate Scaled</td>
+                                        <td class="text-end fw-bold">{{data_hash['finish_rate_scaled'] | round(1)}}</td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>Peak ELO Scaled</td>
+                                        <td class="text-end fw-bold">{{data_hash['peak_elo_scaled'] | round(1)}}</td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>Current ELO Scaled</td>
+                                        <td class="text-end fw-bold">{{data_hash['elo_scaled'] | round(1)}}</td>
+                                    </tr>
+
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="container mt-5">
+                            <form id="numForm" method="POST" action="{{ url_for('fighter', id=id) }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <div class="d-flex flex-column align-items-center justify-content-center">
+                                    <label for="num"><p style="font-size: 20px;">Pick number of strengths/weaknesses:</p></label>
+                                    <div class="d-flex flex-row">
+                                        <span class="me-2">
+                                        <input type="number" id="num" class="form-control rounded-pill" style="max-width: 70px;" name="num" min="1" max="25" value="{{ quantity }}">
+                                        </span>
+                                        <button class="btn btn-dark" type="submit" name="action" value="overall">Submit</button>
+                                    </div>
+                                </div>
+                            </form>
+                            <div class="row mt-3">
+                                <div class="col m-2 p-3 bg-dark text-white rounded-4 shadow">
+                                    <h2> TOP {{quantity}} Strengths </h2>
+                                    <ol>
+                                    {% for key, value in strengths.items() %}
+                                        <li> {{key}} : {{value}} </li>
+                                    {% endfor %}
+                                    </ol>
+                                </div>
+                                <div class="col m-2 p-3 bg-dark text-white rounded-4 shadow">
+                                    <h2> TOP {{quantity}} Weaknesses </h2>
+                                    <ol>
+                                    {% for key, value in weaknesses.items() %}
+                                        <li> {{key}} : {{value}} </li>
+                                    {% endfor %}
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

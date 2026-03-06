@@ -201,9 +201,9 @@ def match_ups():
     # Function to get all the data for a given pair of fighters
     def get_fight_data(fighter1_name, fighter2_name):
         fighter_bio_1, fighter_bio_2 = get_two_fighters(fighter1_name, fighter2_name, db)
+        fighter_bio_1['team'], fighter_bio_2['team'] = fighter_bio_1['team'].title() if fighter_bio_1['team'] else None, fighter_bio_2['team'].title() if fighter_bio_2['team'] else None
         fighter_data_1 = get_fighter_data(fighter_bio_1['id'], db)
         fighter_data_2 = get_fighter_data(fighter_bio_2['id'], db)
-
 
         strike_fig, grappling_fig, career_fig = plot_mergers(fighter_bio_1['id'], fighter_bio_2['id'], db)
         heat1, heat2 = (
@@ -250,8 +250,8 @@ def match_ups():
             heat1, heat2, compare_plots, career_data, global_scores = get_fight_data(fighter1, fighter2)
         except Exception as e:
             # If any exception occurs, fallback to default fighters (already loaded above)
+            print(e)
             flash("This fighter either doesn't have registered stats in espn or he/she doesn't exist")
-            pass
 
     return render_template(
         'match_ups.html', names=fighter_names,
@@ -406,7 +406,12 @@ def fighter(id):
     if fighter is None:
         return apology('fighter not found')
     fighter = dict(fighter[0])
-    fighter['birthday'] = date.today().year - datetime.strptime(fighter['birthday'], '%m/%d/%Y').year if fighter['birthday'] != None else None
+    if fighter['birthday']:
+        fighter['birthday'] = date.today().year - datetime.strptime(fighter['birthday'], '%m/%d/%Y').year if fighter['birthday'] != None else None
+
+    fighter['weight'] = fighter['weight'].replace('.', '')
+    if fighter['team']:
+        fighter['team'] = fighter['team'].title()
 
     plot = elo_history_plot(id).to_html(full_html=False)
     #random initial assignment for heat map
@@ -415,7 +420,9 @@ def fighter(id):
     strengths = {}
 
     elo_hash = elo_analysis(id)
-    career_hash = career_analysis(db=db, id=id, cached=True)
+    career_hash = career_analysis(db=db, id=id, cached=False) #return to true once ur done
+    career_hash['finish_rate'] = f'{career_hash['finish_rate'] * 100 : .1f}%'
+    career_hash['win_rate'] = f'{career_hash['win_rate'] * 100 : .1f}%'
     data_hash = career_hash
     print(data_hash)
     last_5 = data_hash['last_5']

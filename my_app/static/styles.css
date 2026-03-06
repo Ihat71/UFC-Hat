@@ -1,4 +1,11 @@
-/* Size for brand */
+a {
+    text-decoration: none;
+}
+
+p {
+    color: aliceblue;
+}
+
 nav .navbar-brand
 {
     font-size: xx-large;
@@ -22,10 +29,15 @@ nav .navbar-brand .green
     color: #2e944b;
 }
 
+h1, h2, h3 {
+    color: aliceblue;
+}
+
 ul {
     list-style: none;
     padding: 0;
     margin: 0;
+    max-width: 300px;
 }
 
 .dropdown {
@@ -35,12 +47,85 @@ ul {
 }
 
 ul li {
-    padding: 8px;
+    padding: 5px;
     cursor: pointer;
+    border-radius: 15px;
+    align-self: center;
 }
 
+
 ul li:hover {
-    background: #eee;
+    background: rgba(192, 192, 192, 0.409);
 }
+
+ol li {
+    padding: 1px;
+    cursor: pointer;
+    border-radius: 15px;
+    align-self: flex-start;
+    color: aliceblue;
+}
+
+ol li:hover {
+    background: rgba(192, 192, 192, 0.409);
+}
+
+.bg-navy {
+    /* background: #0e143b;  */
+    background: rgb(0, 0, 61);
+}
+
+.glow-div {
+width: 400px;
+height: 150px;
+color: #d7d6d5;
+margin: 50px auto;
+border-radius: 10px;
+box-shadow: 0 0 20px rgba(255, 255, 255, 0.845);
+transition: box-shadow 0.3s ease-in-out;
+}
+
+
+.glow-div:hover {
+box-shadow: 0 0 40px rgba(0, 255, 255, 1),
+0 0 80px rgba(0, 255, 255, 0.7);
+}
+
+.nav-bg-grey {
+background-color: #20282e;
+color: aliceblue;
+}
+
+graph-div {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    justify-items: start;
+    margin-top: 30px;
+}
+
+.data-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, auto));
+    gap: 25px;
+    justify-items: center;
+    align-items: center;
+    justify-content: center;
+    margin-top: 30px;
+}
+
+.data-grid-g {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, auto));
+    gap: 25px;
+    justify-items: space-evenly;
+    align-items: center;
+    justify-content: center;
+    margin-top: 30px;
+    max-height: 500px;
+}
+
+
+
 
 

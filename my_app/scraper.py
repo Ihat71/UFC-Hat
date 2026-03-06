@@ -9,6 +9,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from utilities import *
 import time, random
 import re
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -525,3 +526,285 @@ def espn_stats_threaded(max_workers=5):
             
 
 #need to make a backfilling for what was missed. espn is so extra with their rate limiting. Currently missing 2553
+
+def create_fights_table(db):
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS fights (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            fighter_1 INTEGER UNIQUE,
+            fighter_2 INTEGER UNIQUE,
+            fight_url TEXT UNIQUE,
+            winner TEXT,
+            title_fight TEXT,
+            bonus TEXT,
+            method TEXT,
+            round TEXT,
+            time TEXT,
+            fight_data TEXT
+        )
+    """)
+
+
+def fight_exists(db, fight_url):
+    result = db.execute(
+        "SELECT 1 FROM fights WHERE fight_url=? LIMIT 1",
+        (fight_url,)
+    ).fetchone()
+
+    return result is not None
+
+
+def save_fight_to_db(db, fight):
+    db.execute("""
+        INSERT OR IGNORE INTO fights (
+            fighter_1,
+            fighter_2
+            fight_url,
+            winner,
+            title_fight,
+            bonus,
+            method,
+            round,
+            time,
+            fight_data
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        fight.get('fighter_1'),
+        fight.get('fighter_2'),
+        fight.get("fight_url"),
+        fight.get("winner"),
+        fight.get("title_fight"),
+        fight.get("bonus"),
+        fight.get("method"),
+        fight.get("round"),
+        fight.get("time"),
+        json.dumps(fight)
+        )
+    )
+
+
+def fight_scraper():
+    with sq.connect(db_path) as conn:
+        '''this scraper scrapes fight data from individual fights'''
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/128.0.0.0 Safari/537.36"
+            ),
+            "Accept-Language": "en-US,en;q=0.9",
+            "Referer": "https://www.espn.com/",
+        }
+
+        conn.row_factory = sq.Row
+        db = conn.cursor()
+
+        # create table once
+        create_fights_table(db)
+
+        rows = db.execute("SELECT event_url as url, event_date as date FROM events").fetchall()
+        events_url = [row["url"] for row in rows]
+
+        with requests.Session() as session:
+            for url in events_url:
+                try:
+                    response = session.get(url, headers=headers)
+                    response.raise_for_status()
+
+                    soup = BeautifulSoup(response.text, "html.parser")
+
+                    table = soup.find("table")
+                    if not table:
+                        continue
+
+                    thead = table.find("thead")
+                    if not thead:
+                        continue
+
+                    th_list = thead.find_all("th")
+
+                    wc_index = None
+                    for i, th in enumerate(th_list):
+                        if th.text.lower().strip() == "weight class":
+                            wc_index = i
+                            break
+
+                    if wc_index is None:
+                        continue
+
+                    tbody = table.find("tbody")
+                    if not tbody:
+                        continue
+
+                    tr_list = tbody.find_all("tr")
+
+                    tr_list_helper(
+                        tr_list, session, db, wc_index, headers
+                    )
+
+                    # commit once per event (FAST)
+                    db.connection.commit()
+
+                except Exception as e:
+                    logger.error(f"There was an exception requesting url: {e}")
+
+
+def tr_list_helper(tr_list, session, db, wc_index, headers):
+
+    for tr in tr_list:
+
+        fight = {
+            "fighter_1": {},
+            "fighter_2": {},
+        }
+
+        title_fight = False
+        bonus = None
+
+        td_list = tr.find_all("td")
+        if not td_list:
+            continue
+
+        # -------------------------
+        # fighters
+        # -------------------------
+        names = td_list[1].find_all("p")
+        if len(names) < 2:
+            continue
+
+        fight["fighter_1"]["name"] = names[0].text.strip()
+        fight["fighter_2"]["name"] = names[1].text.strip()
+
+        fight['fighter_1'] = db.execute('select fighter_id from fighters where name = ?', (fight["fighter_1"]["name"]))
+        fight['fighter_2'] = db.execute('select fighter_id from fighters where name = ?', (fight["fighter_2"]["name"]))
+
+        # winner
+        if td_list[0].text.strip().lower() == "win":
+            fight["winner"] = fight["fighter_1"]["name"]
+        else:
+            fight["winner"] = None
+
+        # -------------------------
+        # fight URL
+        # -------------------------
+        fight_url = tr.get("data-link")
+        if not fight_url:
+            continue
+
+        # fix relative urls
+        if fight_url.startswith("/"):
+            fight_url = "https://www.espn.com" + fight_url
+
+        # skip already scraped fights
+        if fight_exists(db, fight_url):
+            logger.info(f"Skipping existing fight: {fight_url}")
+            continue
+
+        fight["fight_url"] = fight_url
+
+        # -------------------------
+        # bonuses / belts
+        # -------------------------
+        weight_class = td_list[wc_index]
+
+        for img in weight_class.find_all("img"):
+            src = img.get("src", "")
+
+            if "belt.png" in src:
+                title_fight = True
+            elif "perf.png" in src:
+                bonus = "perf"
+            elif "sub.png" in src:
+                bonus = "sub"
+            elif "fight.png" in src:
+                bonus = "fight"
+            elif "ko.png" in src:
+                bonus = "ko"
+
+        fight["title_fight"] = "yes" if title_fight else "no"
+        fight["bonus"] = bonus
+
+        fight["method"] = td_list[wc_index + 1].text.strip()
+        fight["round"] = td_list[wc_index + 2].text.strip()
+        fight["time"] = td_list[wc_index + 3].text.strip()
+
+        # =====================================================
+        # SCRAPE FIGHT PAGE
+        # =====================================================
+        try:
+            page = session.get(fight_url, headers=headers)
+            page.raise_for_status()
+
+            fight_soup = BeautifulSoup(page.text, "html.parser")
+
+            total_headers = None
+            total_stats = None
+            sig_headers = None
+            sig_stats = None
+
+            for table in fight_soup.find_all("table"):
+
+                thead = table.find("thead")
+                if not thead:
+                    continue
+
+                ths = thead.find_all("th")
+                if len(ths) < 2:
+                    continue
+
+                header_name = ths[1].text.strip().lower()
+
+                if header_name == "kd":
+                    total_headers = ths
+                    total_stats = table.find("tbody").find_all("tr")
+
+                elif header_name == "sig. str":
+                    sig_headers = ths
+                    sig_stats = table.find("tbody").find_all("tr")
+
+            # TOTAL STATS
+            if total_headers and total_stats and len(total_stats) >= 2:
+
+                f1_cols = total_stats[0].find_all("td")
+                f2_cols = total_stats[1].find_all("td")
+
+                for i in range(1, len(total_headers)):
+
+                    header = (
+                        total_headers[i].text
+                        .replace(".", "")
+                        .replace("%", "percent")
+                        .strip()
+                        .replace(" ", "_")
+                        .lower()
+                    )
+
+                    fight["fighter_1"][header] = f1_cols[i].text.strip()
+                    fight["fighter_2"][header] = f2_cols[i].text.strip()
+
+            # SIGNIFICANT STRIKES
+            if sig_headers and sig_stats and len(sig_stats) >= 2:
+
+                f1_cols = sig_stats[0].find_all("td")
+                f2_cols = sig_stats[1].find_all("td")
+
+                for i in range(1, len(sig_headers)):
+
+                    header = (
+                        sig_headers[i].text
+                        .replace(".", "")
+                        .replace("%", "percent")
+                        .strip()
+                        .replace(" ", "_")
+                        .lower()
+                    )
+
+                    fight["fighter_1"][header] = f1_cols[i].text.strip()
+                    fight["fighter_2"][header] = f2_cols[i].text.strip()
+
+            # save fight
+            save_fight_to_db(db, fight)
+
+        except Exception as e:
+            logger.error(f"Error processing fight: {e}")

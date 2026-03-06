@@ -6,10 +6,12 @@
 
 {% block main %}
     <h1>{{fighter_1['name']}} VS {{fighter_2['name']}}</h1>
-    <table align="center">
+    <table class="table table-dark" align="center">
         <thead>
-            <th>{{fighter_1['name']}}</th>
-            <th>{{fighter_2['name']}}</th>
+            <tr>
+                <th>{{fighter_1['name']}}</th>
+                <th>{{fighter_2['name']}}</th>
+            </tr>
         </thead>
         <tbody>
             <tr>

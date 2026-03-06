@@ -23,28 +23,31 @@
 
     </head>
 
-    <body>
-        <nav class="bg-light border navbar navbar-expand-md navbar-light">
+    <body class="bg-navy">
+        <nav class="navbar navbar-expand-md navbar-dark nav-bg-grey">
             <div class="container-fluid">
-                <a class="navbar-brand" href="/"><span><img src="static/images/straw_hat.jpg" height="50px" width="50px">UFC-Hat</span></a>
+                <a class="navbar-brand" href="/"><span><img src="static/images/straw_hat.jpg" height="50px" width="70px">UFC-Hat</span></a>
                 <button aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation" class="navbar-toggler" data-bs-target="#navbar" data-bs-toggle="collapse" type="button">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="navbar">
                     {% if session["user_id"] %}
                         <ul class="navbar-nav me-auto mt-2">
-                            <li class="nav-item"><a class="nav-link" href="/roster">Roster</a></li>
-                            <li class="nav-item"><a class="nav-link" href="/fights/completed/">Fights</a></li>
-                            <li class="nav-item"><a class="nav-link" href="/match-ups">Match ups</a></li>
-                            <li class="nav-item"><a class="nav-link" href="/predictions">Predictions</a></li>
-                            <li class="nav-item"><a class="nav-link" href="/rankings">Rankings</a></li>
+                            <li class="nav-item"><a class="nav-link" style="color:aliceblue;" href="/roster">Roster</a></li>
+                            <li class="nav-item"><a class="nav-link" style="color:aliceblue;" href="/fights/completed/">Fights</a></li>
+                            <li class="nav-item"><a class="nav-link" style="color:aliceblue;" href="/match-ups">MatchUps</a></li>
+                            <li class="nav-item"><a class="nav-link" style="color:aliceblue;" href="/predictions">Predictions</a></li>
+                            <li class="nav-item"><a class="nav-link" style="color:aliceblue;" href="/rankings">Rankings</a></li>
                         </ul>
-                        <ul class="navbar-nav ms-auto mt-2">
-                            <li class="nav-item"><a class="nav-link" href="/logout">Log Out</a></li>
-                        </ul>
-                        <form action="/search/" method="get">
-                            <input type="search" name="query" placeholder="Search">
-                        </form>
+                        <div class="d-flex ms-auto align-items-center gap-3">
+                            
+                            <form class="d-flex" action="/search/" method="get">
+                                <input class="form-control" type="search" name="query" placeholder="Search Fighters">
+                            </form>
+
+                            <a class="nav-link" href="/logout">Log Out</a>
+
+                        </div>
                     {% else %}
                         <ul class="navbar-nav ms-auto mt-2">
                             <li class="nav-item"><a class="nav-link" href="/register">Register</a></li>
@@ -63,7 +66,7 @@
             </header>
         {% endif %}
 
-        <main class="container py-5 text-center">
+        <main class="container py-5 text-center bg-navy">
             {% block main %}{% endblock %}
         </main>
 

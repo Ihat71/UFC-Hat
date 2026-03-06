@@ -27,11 +27,11 @@
     align-items: center; /* Center content horizontally */
     justify-content: center;
     transition: all 0.2s ease;
-    background-color: #fafafa;
+    background-color: #36454F;
 }
 
 .fighter-card:hover {
-    border-color: #1976d2;
+    border-color: #1e00ff;
     box-shadow: 0 4px 10px rgba(0,0,0,0.2);
 }
 
@@ -46,65 +46,40 @@
 .fighter-card a {
     text-decoration: none;
     font-weight: bold;
-    color: #7b1fa2;
+    color: aliceblue;
     display: block;
     text-align: center;
 }
 
-.fighter-card a:hover {
-    color: #1976d2;
+.fighter-card p {
+    text-decoration: none;
+    font-weight: bold;
+    color: aliceblue;
+    display: block;
+    text-align: center;
 }
 
-/* Dark mode */
-body.dark-mode {
-    background-color: #121212;
-    color: #e0e0e0;
-}
 
-body.dark-mode .fighter-card {
-    background-color: #1e1e1e;
-    border-color: #bb86fc;
-}
 
-body.dark-mode .fighter-card:hover {
-    border-color: #03a9f4;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-}
-
-body.dark-mode .fighter-card a {
-    color: #bb86fc;
-}
-
-body.dark-mode .fighter-card a:hover {
-    color: #03a9f4;
-}
-
-/* Dark mode toggle button */
-#darkModeToggle {
-    padding: 8px 16px;
-    font-size: 14px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-    cursor: pointer;
-    background-color: #1976d2;
-    color: white;
-    float: right;
-    margin: 10px;
-}
 </style>
 
-<!-- Dark mode toggle -->
-<button id="darkModeToggle">Dark Mode</button>
-
 <div>
+    {% if matched_number > 1 %}
     <h1 style="text-align:center;">There were {{ matched_number }} matches</h1>
+    {% elif matched_number == 1 %}
+    <h1 style="text-align:center;">There was 1 match</h1>
+    {% else %}
+    <h1 style="text-align:center;">There were NO matches</h1>
+    {% endif %}
     
     <div class="fighter-grid">
         {% for fighter in fighters_list %}
+        <a href="/fighter/{{ fighter['fighter_id'] }}">
         <div class="fighter-card">
             <img src="{{ fighter['picture'] }}" alt="no pic found">
-            <a href="/fighter/{{ fighter['fighter_id'] }}">{{ fighter["name"] }}</a>
+            <p>{{ fighter["name"] }}</p>
         </div>
+        </a>
         {% endfor %}
     </div>
 </div>

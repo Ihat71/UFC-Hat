@@ -7,41 +7,27 @@
 {% block main %}
 
 <style>
-/* General dark mode */
-body.dark-mode {
-    background-color: #121212;
-    color: #e0e0e0;
-}
 
-nav {
+.fights-nav {
     text-align: center;
     margin-bottom: 20px;
 }
 
-nav a {
+.fights-nav a {
     margin: 0 10px;
     text-decoration: none;
     font-weight: bold;
-    color: #1976d2;
+    color: pink;
     padding: 6px 12px;
     border-radius: 4px;
     transition: all 0.2s ease;
 }
 
-nav a:hover {
-    background-color: #7b1fa2;
-    color: white;
+.fights-nav a:hover {
+    background-color: #f5f5dc;
+    color: rgb(0, 0, 0);
 }
 
-/* Dark mode nav links */
-body.dark-mode nav a {
-    color: #bb86fc;
-}
-
-body.dark-mode nav a:hover {
-    background-color: #03a9f4;
-    color: #121212;
-}
 
 /* Event/fight lists */
 .event-list, .upcoming-list {
@@ -51,30 +37,23 @@ body.dark-mode nav a:hover {
     margin-top: 20px;
     list-style: none;
     padding: 0;
+    max-width: none;
 }
 
 .event-card, .upcoming-card {
     border: 2px solid black;
     border-radius: 10px;
     padding: 12px;
-    transition: all 0.2s ease;
-    background-color: #fafafa;
+    transition: all 0.3s ease;
+    background-color: #36454F;
 }
 
 .event-card:hover, .upcoming-card:hover {
-    border-color: #1976d2; /* blue hover */
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    border: 2px solid pink; 
+    box-shadow: 0 4px 10px rgba(75, 8, 183, 0.264);
+    background-color: rgb(10, 41, 153)
 }
 
-body.dark-mode .event-card, body.dark-mode .upcoming-card {
-    background-color: #1e1e1e;
-    border-color: #bb86fc;
-}
-
-body.dark-mode .event-card:hover, body.dark-mode .upcoming-card:hover {
-    border-color: #03a9f4;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-}
 
 /* Event titles and details */
 .event-card h3, .upcoming-card h3 {
@@ -85,15 +64,12 @@ body.dark-mode .event-card:hover, body.dark-mode .upcoming-card:hover {
 .event-card p, .upcoming-card p {
     margin: 0;
     font-size: 14px;
-    color: #444;
+    color: rgb(255, 211, 219);
 }
 
-body.dark-mode .event-card p, body.dark-mode .upcoming-card p {
-    color: #e0e0e0;
-}
 
 /* Table styling */
-table {
+/* table {
     border-collapse: collapse;
     width: 100%;
     margin-top: 20px;
@@ -103,46 +79,25 @@ table th, table td {
     border: 1px solid #444;
     padding: 8px;
     text-align: center;
-}
+} */
 
-body.dark-mode table th, body.dark-mode table td {
-    border-color: #bb86fc;
-}
-
-body.dark-mode table {
-    background-color: #1e1e1e;
-}
-
-/* Dark mode toggle button */
-#darkModeToggle {
-    padding: 8px 16px;
-    font-size: 14px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-    cursor: pointer;
-    background-color: #1976d2;
-    color: white;
-    float: right;
-    margin: 10px;
-}
 </style>
 
-<!-- Dark mode toggle -->
-<button id="darkModeToggle">Dark Mode</button>
 
-<div>
-    <nav>
+
+<div class="container">
+    <nav class="fights-nav">
         <a href="/fights/completed/">Completed</a>
         <a href="/fights/upcoming/">Upcoming</a>
     </nav>
 
-    <div>
+    <div class="container">
         {% if sub in ["completed", "upcoming"] %}
             <h1 style="text-align:center">{{sub}} events</h1>
         {% endif %}
 
         {% if sub == "completed" %}
-            <p style="text-align:center">Only showing the last 30</p>
+            <p style="text-align:center; color: aliceblue;">Only showing the last 30</p>
             <ul class="event-list">
                 {% for event in events %}
                 <li class="event-card">
@@ -165,54 +120,38 @@ body.dark-mode table {
                 {% endfor %}
             </ul>
         {% else %}
-            <table>
-                <thead>
-                    {% for num, fight in fights.items() %}
-                        {% for col in fight %}
-                            {% if num == 1 %}
-                                <th>{{col}}</th>
-                            {% endif %}
+            <div class="container mt-5">
+                <div class="mb-5">
+                    <h1 style="text-align:center">Events Table</h1>
+                </div>
+                <table class="table table-dark table-striped table-hover">
+                    <thead>
+                        {% for num, fight in fights.items() %}
+                            {% for col in fight %}
+                                {% if num == 1 %}
+                                    <th>{{col | replace("_", " ") | title()}}</th>
+                                {% endif %}
+                            {% endfor %}
                         {% endfor %}
-                    {% endfor %}
-                </thead>
-                <tbody>
+                    </thead>
+                    <tbody>
                     {% for num, fight in fights.items() %}
                     <tr>
-                        {% for data in fight.values() %}
-                            <td>{{data}}</td>
+                        {% for key, data in fight.items() %}
+                            {% if key == "is_title" %}
+                                <td>{{ "🥇" if data else "❌" }}</td>
+                            {% else %}
+                                <td>{{ data }}</td>
+                            {% endif %}
                         {% endfor %}
                     </tr>
                     {% endfor %}
-                </tbody>
-            </table>
+                    </tbody>
+                </table>
+            </div>
         {% endif %}
     </div>
 </div>
 
-<script>
-// Dark mode toggle
-const darkModeToggle = document.getElementById('darkModeToggle');
-
-function enableDarkMode(enable) {
-    if(enable) {
-        document.body.classList.add('dark-mode');
-        localStorage.setItem('darkMode', 'true');
-    } else {
-        document.body.classList.remove('dark-mode');
-        localStorage.setItem('darkMode', 'false');
-    }
-}
-
-// Load preference on page load
-window.addEventListener('DOMContentLoaded', () => {
-    const darkMode = localStorage.getItem('darkMode');
-    if(darkMode === 'true') enableDarkMode(true);
-});
-
-darkModeToggle.addEventListener('click', () => {
-    const isDark = document.body.classList.contains('dark-mode');
-    enableDarkMode(!isDark);
-});
-</script>
 
 {% endblock %}

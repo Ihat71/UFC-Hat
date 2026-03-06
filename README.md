@@ -89,11 +89,11 @@ This project is exploratory and designed to generate interesting insights from c
 
 ufc-hat/
 │
-├── data/ # Raw and processed datasets
-├── my_app/ # Application source code
-├── tests/ # Unit tests
-├── notebooks/ # Jupyter notebooks for analysis
-├── README.md
-└── requirements.txt
+├── data/ # Raw and processed datasets <br />
+├── my_app/ # Application source code <br />
+├── tests/ # Unit tests <br />
+├── notebooks/ # Jupyter notebooks for analysis <br />
+├── README.md <br />
+└── requirements.txt <br />
 
 ---

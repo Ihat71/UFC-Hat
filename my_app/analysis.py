@@ -133,6 +133,7 @@ def career_analysis(db, id, cached=False):
     career = db.execute('select * from aggregate_career where fighter_id = ?', (id,)).fetchone()
     if career and (cached == True):
         last_5 = sorted_records[0:5] if len(sorted_records) >= 5 else sorted_records
+        last_5 = last_5[::-1]
         for i in sorted_records:
             i = dict(i)
             if i['weight_class']:
@@ -171,6 +172,7 @@ def career_analysis(db, id, cached=False):
     
 
     last_5 = sorted_records[0:5] if len(sorted_records) >= 5 else sorted_records
+    last_5 = last_5[::-1]
     win_streak = 0
     rounds=0
     last_round_time_seconds=0
@@ -269,10 +271,10 @@ def career_analysis(db, id, cached=False):
         'finishes':finishes,
         'debut':debut,
         'last_fight':last_fight,
-        'cage_time':f'{h}:{m}:{s}',
+        'cage_time':f'{str(h).zfill(2)}:{str(m).zfill(2)}:{str(s).zfill(2)}',
         'win_rate': win_rate,
         'finish_rate': finish_rate,
-        'average_fight_time':f"{avg_m}:{avg_s}",
+        'average_fight_time':f"{str(avg_m).zfill(2)}:{str(avg_s).zfill(2)}",
         'title_fights':title_fights,
         'subs':subs,
         'ko_tko':ko_tko,

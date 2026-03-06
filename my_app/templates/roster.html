@@ -7,10 +7,8 @@
 {% block main %}
 
 <style>
-/* Dark mode & general styles */
-body.dark-mode {
-    background-color: #121212;
-    color: #e0e0e0;
+label {
+    margin-right: 30px;
 }
 
 h1, h3 {
@@ -34,34 +32,18 @@ form select, form button {
 
 /* Button styling */
 form button {
-    background-color: #7b1fa2; /* purple */
+    background-color: #1976d2; /* purple */
     color: white;
     cursor: pointer;
     transition: all 0.2s ease;
+    align-self: flex-end;
+    margin-top: 10px;
+    width: 100px;;
 }
 
 form button:hover {
-    background-color: #1976d2; /* blue */
+    background-color: #1e8efe; /* blue */
     border-color: #115293;
-}
-
-/* Dark mode form */
-body.dark-mode form select {
-    background-color: #1e1e1e;
-    color: #e0e0e0;
-    border-color: #bb86fc;
-}
-
-body.dark-mode form button {
-    background-color: #bb86fc;
-    color: #121212;
-    border-color: #9c27b0;
-}
-
-body.dark-mode form button:hover {
-    background-color: #03a9f4;
-    color: white;
-    border-color: #0288d1;
 }
 
 /* Fighter grid */
@@ -80,11 +62,12 @@ body.dark-mode form button:hover {
     text-align: center;
     padding: 10px;
     transition: all 0.2s ease;
-    background-color: #fafafa;
+    background-color: #36454F;
+    color:aliceblue
 }
 
 .fighter-card:hover {
-    border-color: #1976d2; /* blue hover */
+    border-color: #1e00ff; 
     box-shadow: 0 4px 10px rgba(0,0,0,0.2);
 }
 
@@ -102,109 +85,64 @@ body.dark-mode form button:hover {
     margin-bottom: 4px;
 }
 
-body.dark-mode .fighter-card {
-    background-color: #1e1e1e;
-    border-color: #bb86fc;
-}
-
-body.dark-mode .fighter-card:hover {
-    border-color: #03a9f4;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-}
-
-/* Dark mode links */
-body.dark-mode a {
-    color: #03a9f4;
-}
 </style>
 
-<!-- Dark mode toggle button -->
-<div style="text-align: right; margin: 10px;">
-    <button id="darkModeToggle" style="
-        padding: 8px 16px;
-        font-size: 14px;
-        border-radius: 6px;
-        border: 1px solid #ccc;
-        cursor: pointer;
-        background-color: #1976d2;
-        color: white;
-    ">Dark Mode</button>
-</div>
+<div class="container">
+    <h1 style="color:aliceblue;">Fighter Roster</h1>
+    <div class="d-flex flex-column">
+        <div class="d-flex justify-content-start" style="float: left;">
+            <form action="/roster" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="d-flex flex-column justify-content-start align-items-start" style="max-width: 400px; margin: 0 auto; color:aliceblue;">
+                    <h3>Fighter Categories</h3>
+                    <div class="d-flex flex-row">
+                        <label for="weight_class">Categories: </label>
+                        <select name="weight_class" id="weight_class">
+                            <option value="All" selected>All</option>
+                            <option value="Flyweight">Flyweight</option>
+                            <option value="Bantamweight">Bantamweight</option>
+                            <option value="Featherweight">Featherweight</option>
+                            <option value="Lightweight">Lightweight</option>
+                            <option value="Welterweight">Welterweight</option>
+                            <option value="Middleweight">Middleweight</option>
+                            <option value="LightHeavyweight">Light Heavyweight</option>
+                            <option value="Heavyweight">Heavyweight</option>
+                        </select>
+                    </div>
+                    <div class="d-flex flex-row">
+                        <label for="country">Country: </label>
+                        <select name="country" id="country">
+                            <option value="" selected></option>
+                            {% for country in countries %}
+                                <option value="{{ country }}">{{ country }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="d-flex flex-row">
+                        <label for="team">Team: </label>
+                        <select name="team" id="team">
+                            <option value="" selected></option>
+                            {% for team in teams %}
+                                <option value="{{team}}">{{ team }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
 
-<div>
-    <h1>Fighter Roster</h1>
-
-    <form action="/roster" method="post">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <div style="max-width: 400px; margin: 0 auto;">
-            <h3>Fighter Categories</h3>
-            <label for="weight_class">Categories</label>
-            <select name="weight_class" id="weight_class">
-                <option value="All" selected>All</option>
-                <option value="Flyweight">Flyweight</option>
-                <option value="Bantamweight">Bantamweight</option>
-                <option value="Featherweight">Featherweight</option>
-                <option value="Lightweight">Lightweight</option>
-                <option value="Welterweight">Welterweight</option>
-                <option value="Middleweight">Middleweight</option>
-                <option value="LightHeavyweight">Light Heavyweight</option>
-                <option value="Heavyweight">Heavyweight</option>
-            </select>
-
-            <label for="country">Country</label>
-            <select name="country" id="country">
-                <option value="" selected></option>
-                {% for country in countries %}
-                    <option value="{{ country }}">{{ country }}</option>
-                {% endfor %}
-            </select>
-
-            <label for="team">Team</label>
-            <select name="team" id="team">
-                <option value="" selected></option>
-                {% for team in teams %}
-                    <option value="{{team}}">{{ team }}</option>
-                {% endfor %}
-            </select>
-
-            <button type="submit">Search</button>
+                    <button type="submit">Search</button>
+                </div>
+            </form>
         </div>
-    </form>
 
-    <div class="fighter-grid">
-        {% for fighter in fighters %}
-        <a href="/fighter/{{fighter['fighter_id']}}" class="fighter-card">
-            <img src="{{fighter['picture']}}" alt="no pic found">
-            <div class="fighter-name">{{fighter['name']}}</div>
-        </a>
-        {% endfor %}
+        <div class="fighter-grid">
+            {% for fighter in fighters %}
+            <a href="/fighter/{{fighter['fighter_id']}}" class="fighter-card">
+                <img src="{{fighter['picture']}}" alt="no pic found">
+                <div class="fighter-name">{{fighter['name']}}</div>
+            </a>
+            {% endfor %}
+        </div>
     </div>
 </div>
 
-<script>
-// Dark mode toggle
-const darkModeToggle = document.getElementById('darkModeToggle');
-
-function enableDarkMode(enable) {
-    if(enable) {
-        document.body.classList.add('dark-mode');
-        localStorage.setItem('darkMode', 'true');
-    } else {
-        document.body.classList.remove('dark-mode');
-        localStorage.setItem('darkMode', 'false');
-    }
-}
-
-// Load preference on page load
-window.addEventListener('DOMContentLoaded', () => {
-    const darkMode = localStorage.getItem('darkMode');
-    if(darkMode === 'true') enableDarkMode(true);
-});
-
-darkModeToggle.addEventListener('click', () => {
-    const isDark = document.body.classList.contains('dark-mode');
-    enableDarkMode(!isDark);
-});
-</script>
 
 {% endblock %}
