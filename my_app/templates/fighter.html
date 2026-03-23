@@ -102,10 +102,10 @@
                             <ul class="list-inline mb-0" style="margin: 0 auto">
                                 <li>Last 5 Fights:</li>
                                 {% for fight in last_5 %}
-                                    {% if fight['result'] == "win" %}
-                                    <li class="list-inline-item"><a href="/versus/{{fight['fight_id']}}/" title="{{fight['fighter_1']}} vs {{fight['fighter_2']}}">&#9989;</a></li>
+                                    {% if fight["winner"] == fighter["fighter_id"]%}
+                                    <li class="list-inline-item"><a href="/versus/{{fight['fight_id']}}/" title="{{fight['fighter_a']}} vs {{fight['fighter_b']}}">&#9989;</a></li>
                                     {% else %}
-                                    <li class="list-inline-item"><a href="/versus/{{fight['fight_id']}}/" title="{{fight['fighter_1']}} vs {{fight['fighter_2']}}">&#10060;</a></li>
+                                    <li class="list-inline-item"><a href="/versus/{{fight['fight_id']}}/" title="{{fight['fighter_a']}} vs {{fight['fighter_b']}}">&#10060;</a></li>
                                     {% endif%}
                                 {% endfor %}
                             </ul>

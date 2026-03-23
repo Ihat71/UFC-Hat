@@ -458,7 +458,7 @@ def fighter(id):
 @login_required
 def versus(fight_id):
     conn, db = get_db()
-    fight = db.execute('select * from records where fight_id = ?', (fight_id,)).fetchone()
+    fight = db.execute('select * from fights where fight_id = ?', (fight_id,)).fetchone()
 
     fighter_1, fighter_2 = fight_analysis(db, fight)
 

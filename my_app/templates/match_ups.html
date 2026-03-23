@@ -156,15 +156,13 @@ td, th {
 
 .heatmaps {
     display: flex;
-    gap: 120px;
-    justify-content: flex-start;
+    justify-content: center;
+    gap: 80px;
+    margin: 40px 0;
 }
 
 .heatmaps div {
-    max-width: 150px;
-    justify-content: flex-start;
-    align-items: flex-start;
-    float: left;
+    width: 300px;
 }
 
 .overall-container {
@@ -241,7 +239,7 @@ td, th {
                 </div>
 
                 <!-- Striking tab -->
-                <div id="striking-tab" class="vs-content bg-white">
+                <div id="striking-tab" class="vs-content bg-dark">
                     <div>
                         {{strike_fig | safe}}
                     </div>
@@ -259,7 +257,7 @@ td, th {
                 </div>
 
                 <!-- Grappling tab -->
-                <div id="grappling-tab" class="vs-content bg-white">
+                <div id="grappling-tab" class="vs-content bg-dark">
                     {{grappling_fig | safe}}
                     <div>
                         {{compare_plots[1] | safe}}
@@ -267,7 +265,7 @@ td, th {
                 </div>
 
                 <!-- Overall tab -->
-                <div id="overall-tab" class="vs-content bg-white">
+                <div id="overall-tab" class="vs-content bg-dark">
                     {{career_fig | safe}}
                     <div class="overall-container bg-navy p-2 rounded-4">
                         <!-- Fighter 1 -->

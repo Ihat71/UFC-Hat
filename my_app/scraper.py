@@ -264,14 +264,13 @@ def get_advanced_stats():
 def get_espn_stats(espn_url, name):
     time.sleep(random.uniform(0.2, 0.6))
     #x forwarded only wors for very lazy websites so this was useless but we move
-    ipv6_random = get_random_ip(ip_list)
+    # ipv6_random = get_random_ip(ip_list)
     headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                   "AppleWebKit/537.36 (KHTML, like Gecko) "
                   "Chrome/128.0.0.0 Safari/537.36",
     "Accept-Language": "en-US,en;q=0.9",
     "Referer": "https://www.espn.com/",
-    "X-Forwarded-For" : ipv6_random,
     }      
     striking_dict, clinching_dict, ground_dict = {}, {}, {}
     status_code = None
@@ -363,7 +362,7 @@ def get_espn_stats(espn_url, name):
 
     return (striking_dict, clinching_dict, ground_dict, status_code)
         
-def get_espn_ids(seen_ids, id_and_name):
+def get_espn_ids(seen_ids=None, id_and_name=(None, None)):
     fighter_id, name = id_and_name
     headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -374,9 +373,9 @@ def get_espn_ids(seen_ids, id_and_name):
     }  
     time.sleep(random.uniform(0.2, 0.6))
 
-
-    if fighter_id and (fighter_id,) in seen_ids:
-        return ('seen', 'seen')
+    if seen_ids:
+        if fighter_id and (fighter_id,) in seen_ids:
+            return ('seen', 'seen')
     
     #fun better way:
     # if fighter_id and fighter_id in [*id for id in seen_ids]
@@ -529,10 +528,10 @@ def espn_stats_threaded(max_workers=5):
 
 def create_fights_table(db):
     db.execute("""
-        CREATE TABLE IF NOT EXISTS fights (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            fighter_1 INTEGER UNIQUE,
-            fighter_2 INTEGER UNIQUE,
+        CREATE TABLE IF NOT EXISTS fights_extended (
+            fight_id INTEGER,
+            fighter_1 INTEGER,
+            fighter_2 INTEGER,
             fight_url TEXT UNIQUE,
             winner TEXT,
             title_fight TEXT,
@@ -540,7 +539,20 @@ def create_fights_table(db):
             method TEXT,
             round TEXT,
             time TEXT,
-            fight_data TEXT
+            fight_data TEXT,
+            FOREIGN KEY (fight_id) REFERENCES fights (fight_id)
+        )
+    """)
+
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS rounds (
+            fight_id INTEGER,
+            round integer,
+            stat_type TEXT,
+            stat TEXT,
+            fighter_1 TEXT,
+            fighter_2 TEXT,
+            FOREIGN KEY (fight_id) REFERENCES fights (fight_id)
         )
     """)
 
@@ -556,9 +568,10 @@ def fight_exists(db, fight_url):
 
 def save_fight_to_db(db, fight):
     db.execute("""
-        INSERT OR IGNORE INTO fights (
+        INSERT OR IGNORE INTO fights_extended (
+            fight_id,
             fighter_1,
-            fighter_2
+            fighter_2,
             fight_url,
             winner,
             title_fight,
@@ -568,10 +581,11 @@ def save_fight_to_db(db, fight):
             time,
             fight_data
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
-        fight.get('fighter_1'),
-        fight.get('fighter_2'),
+        fight.get('fight_id'),
+        fight.get('fighter_1').get('fighter_id'),
+        fight.get('fighter_2').get('fighter_id'),
         fight.get("fight_url"),
         fight.get("winner"),
         fight.get("title_fight"),
@@ -584,7 +598,8 @@ def save_fight_to_db(db, fight):
     )
 
 
-def fight_scraper():
+def fight_scraper(do_all=True):
+    """if do_all is true it means the function will scrape all events"""
     with sq.connect(db_path) as conn:
         '''this scraper scrapes fight data from individual fights'''
         headers = {
@@ -596,6 +611,16 @@ def fight_scraper():
             "Accept-Language": "en-US,en;q=0.9",
             "Referer": "https://www.espn.com/",
         }
+
+        # NOTE TO SELF:
+        # add a way to scrape this fight data and also link it to
+        #its fight ID in the fights table. If it is not in there
+        # make sure to add an entry for it (DONE)
+        # it should also give round data in a table called rounds (NEXT)
+        # round data has 5 columns and you simply dump all the round data
+        # into each round and then clean up the data later for visualization
+        # we can then also use the data in the round data for more accurate
+        # fighter data and predictions by deriving trends from various rounds
 
         conn.row_factory = sq.Row
         db = conn.cursor()
@@ -613,6 +638,13 @@ def fight_scraper():
                     response.raise_for_status()
 
                     soup = BeautifulSoup(response.text, "html.parser")
+
+                    fight_date = None
+
+                    li_list = soup.find_all('li')
+                    for li in li_list:
+                        if "Date:" in li.text:
+                            fight_date = li.text.replace("Date:", "").strip()
 
                     table = soup.find("table")
                     if not table:
@@ -640,7 +672,7 @@ def fight_scraper():
                     tr_list = tbody.find_all("tr")
 
                     tr_list_helper(
-                        tr_list, session, db, wc_index, headers
+                        tr_list, session, db, wc_index, headers, fight_date
                     )
 
                     # commit once per event (FAST)
@@ -650,7 +682,7 @@ def fight_scraper():
                     logger.error(f"There was an exception requesting url: {e}")
 
 
-def tr_list_helper(tr_list, session, db, wc_index, headers):
+def tr_list_helper(tr_list, session, db, wc_index, headers, date):
 
     for tr in tr_list:
 
@@ -658,6 +690,10 @@ def tr_list_helper(tr_list, session, db, wc_index, headers):
             "fighter_1": {},
             "fighter_2": {},
         }
+
+        date = datetime.strptime(date, r"%B %d, %Y")
+        date = date.strftime(r"%b. %d, %Y")
+        fight['date'] = date
 
         title_fight = False
         bonus = None
@@ -676,8 +712,19 @@ def tr_list_helper(tr_list, session, db, wc_index, headers):
         fight["fighter_1"]["name"] = names[0].text.strip()
         fight["fighter_2"]["name"] = names[1].text.strip()
 
-        fight['fighter_1'] = db.execute('select fighter_id from fighters where name = ?', (fight["fighter_1"]["name"]))
-        fight['fighter_2'] = db.execute('select fighter_id from fighters where name = ?', (fight["fighter_2"]["name"]))
+        row = db.execute(
+            "select fighter_id from fighters where name = ?",
+            (fight["fighter_1"]["name"],)
+        ).fetchone()
+
+        fight['fighter_1']['fighter_id'] = row['fighter_id'] if row else None
+
+        row = db.execute(
+            "select fighter_id from fighters where name = ?",
+            (fight["fighter_2"]["name"],)
+        ).fetchone()
+
+        fight['fighter_2']['fighter_id'] = row['fighter_id'] if row else None
 
         # winner
         if td_list[0].text.strip().lower() == "win":
@@ -694,7 +741,7 @@ def tr_list_helper(tr_list, session, db, wc_index, headers):
 
         # fix relative urls
         if fight_url.startswith("/"):
-            fight_url = "https://www.espn.com" + fight_url
+            fight_url = "https://www.ufcstats.com" + fight_url
 
         # skip already scraped fights
         if fight_exists(db, fight_url):
@@ -802,9 +849,127 @@ def tr_list_helper(tr_list, session, db, wc_index, headers):
 
                     fight["fighter_1"][header] = f1_cols[i].text.strip()
                     fight["fighter_2"][header] = f2_cols[i].text.strip()
+                        
+            fight['fight_id'] = get_fight_id(db, fight)
+            rounds = round_data(db, fight, fight_soup)
+            parsed_rounds = table_parser(rounds, fight['fight_id'])
+
+
+
+                
+
 
             # save fight
             save_fight_to_db(db, fight)
+            save_to_rounds(db, parsed_rounds)
 
         except Exception as e:
             logger.error(f"Error processing fight: {e}")
+
+def get_fight_id(db, fight):
+    fighter_1 = fight['fighter_1']['fighter_id']
+    fighter_2 = fight['fighter_2']['fighter_id']
+    winner = fight['winner']
+    date = fight['date']
+    placeholders = (fighter_1, fighter_2, fighter_2, fighter_1, winner, date)
+    row = db.execute('''select fight_id from fights where ((fighter_a = ? and fighter_b = ?)
+    or (fighter_b = ? and fighter_a = ?)) and winner = ? and date = ?''', placeholders).fetchone()
+
+    if row:
+        return row['fight_id']
+    
+    return None
+
+def round_data(db, fight, page):
+    rounds = {
+        'sig_strikes': {
+            'headers':['fighter', 'sig_str', 'sig_str_percent', 'head', 'body', 'leg', 
+                       'distance', 'clinch', 'ground'],
+        },
+        'totals': {
+            'headers':['fighter', 'kd', 'sig_str', 'sig_str_percent', 'total_str', 'td', 'td_percent',
+                    'sub_att', 'rev', 'ctr']
+        }
+    }
+    links = page.find_all('a')
+    count = 0
+    for link in links:
+        if "Per round" in link.text and count < 2:
+            parent = link.parent 
+            table = parent.find('table')
+            if count == 0:
+                rounds['totals']['data'] = table
+            else:
+                rounds['sig_strikes']['data'] = table
+            count += 1
+    return rounds
+    ...
+
+def table_parser(rounds, fight_id):
+
+    parsed = []
+
+    for stat_type in ["totals", "sig_strikes"]:
+
+        table = rounds.get(stat_type, {}).get("data")
+        headers = rounds.get(stat_type, {}).get("headers")
+
+        if not table:
+            continue
+
+        bodies = table.find_all("tbody")
+
+        round_num = 0
+        for body in bodies:
+            rows = body.find_all('tr')
+            if not rows:
+                continue
+            round_num += 1
+            for r_index, row in enumerate(rows):
+
+                cols = row.find_all("td")
+
+                # # this is what I have to work on
+                # fighter_1_vals = cols[0].text.strip().split()
+                # fighter_2_vals = cols[1].text.strip().split()
+                # # ---------------- ISOLATION
+
+                for i, header in enumerate(headers):
+
+                    parsed.append(
+                        {
+                            "fight_id": fight_id,
+                            "round": round_num,
+                            "stat_type": stat_type,
+                            "stat": header,
+                            "fighter_1": cols[i].find_all('p')[0].text.strip() if i < len(cols) else None,
+                            "fighter_2": cols[i].find_all('p')[1].text.strip() if i < len(cols) else None,
+                        }
+                    )
+
+    return parsed
+
+
+# ------------------------------------------------
+# SAVE ROUND DATA
+# ------------------------------------------------
+
+def save_to_rounds(db, rounds):
+
+    for r in rounds:
+
+        db.execute(
+            """
+            insert into rounds
+            (fight_id, round, stat_type, stat, fighter_1, fighter_2)
+            values (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                r["fight_id"],
+                r["round"],
+                r["stat_type"],
+                r["stat"],
+                r["fighter_1"],
+                r["fighter_2"],
+            ),
+        )

@@ -2,7 +2,8 @@ from bs4 import BeautifulSoup
 import requests
 from pathlib import Path
 import sqlite3 as sq
-from datetime import datetime
+import math
+from datetime import datetime, timedelta
 import logging
 from elo import get_dates, to_table_date, elo_equation, elo_history_table
 from scraper import get_espn_stats, get_espn_ids
@@ -15,6 +16,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 import random, time
 from analysis import *
+from utilities import easy_espn_fights_getter
 
 db_path = (Path(__file__).parent).parent / "data" / "testing.db"
 events_url = "http://ufcstats.com/statistics/events/completed?page=all"
@@ -121,7 +123,7 @@ def get_fighter(name, conn):
             url, _ = get_espn_ids(seen_ids, (new_id, name))
             return url
 
-
+#"unexpected ctrl format"
 def put_elo(name, conn):
     cursor = conn.cursor()
     fighter_id = cursor.execute('select fighter_id from fighters where name = ?', (name,)).fetchone()
@@ -158,6 +160,9 @@ def update_records_and_fights():
                 fighter_a = fighter_elements[0].text.strip()
                 fighter_b = fighter_elements[1].text.strip()
                 logger.info(f"Processing fight: {fighter_a} vs {fighter_b}")
+
+                new_url_a = None
+                new_url_b = None
 
                 if not cursor.execute('select * from fighters where name = ?', (fighter_a,)).fetchone():
                     new_url_a = get_fighter(fighter_a, conn)
@@ -256,19 +261,37 @@ def update_records_and_fights():
                 fighters_updated.append(id_a)
                 fighters_updated.append(id_b)
 
+                skip_a = False
+                skip_b = False
+
                 #this is where the espn stats updater starts:
                 espn_url_a = cursor.execute('select espn_url from advanced_striking where fighter_id = ?;', (id_a,)).fetchone()
-                espn_url_a = espn_url_a[0] if espn_url_a else new_url_a
+                if espn_url_a:
+                    espn_url_a = espn_url_a[0]
+                else:
+                    name = cursor.execute('select name from fighters where fighter_id = ?;', (id_a,)).fetchone()
+                    url, _ = get_espn_ids(id_and_name=(id_a, name[0]))
+                    espn_url_a = url
+                    easy_espn_fights_getter(id_a, espn_url_a, conn)
+                    skip_a = True
+                    
                 espn_url_b = cursor.execute('select espn_url from advanced_striking where fighter_id = ?;', (id_b,)).fetchone()
-                espn_url_b = espn_url_b[0] if espn_url_b else new_url_b
+                if espn_url_b:
+                    espn_url_b = espn_url_b[0]
+                else:
+                    name = cursor.execute('select name from fighters where fighter_id = ?;', (id_b,)).fetchone()
+                    url, _ = get_espn_ids(id_and_name=(id_b, name[0]))
+                    espn_url_b = url
+                    easy_espn_fights_getter(id_b, espn_url_b, conn)
+                    skip_b = True
 
                 logger.debug('updating advanced stats now...')
-                if swapped == False:
+                if swapped:
+                    fighter_a, fighter_b = fighter_b, fighter_a
+                if not skip_a:
                     espn_update(espn_url_a, id_a, fighter_a, date, conn)
+                if not skip_b:
                     espn_update(espn_url_b, id_b, fighter_b, date, conn)
-                else:
-                    espn_update(espn_url_a, id_a, fighter_b, date, conn)
-                    espn_update(espn_url_b, id_b, fighter_a, date, conn)
 
 
 
@@ -314,8 +337,8 @@ def espn_update(url, id, name, date, conn):
                     except ValueError:
                         logger.warning(f"Could not parse ESPN date: {espn_date_str}")
                         continue
-
-                if espn_date == fight_date:
+                
+                if abs(espn_date - fight_date) <= timedelta(days=1):
                     logger.info('fight found')
                     column_query, values = get_column_query(fight)
                     query = f'insert into {table} {column_query} values {values}'
@@ -694,7 +717,11 @@ def update_fighters_aggregate_stats():
         db = conn.cursor()
 
         for fighter_id in fighters_updated:
-            update_individual_fighter_aggregate_stats(fighter_id, db, conn)
+            try:
+                update_individual_fighter_aggregate_stats(fighter_id, db, conn)
+            except Exception as e:
+                logger.warning(f"Skipping {fighter_id}, Exception raised: {e}")
+                continue
 
 def new_fighter_clean_up():
     # for fighters who have a registered fighter id but not an espn url.

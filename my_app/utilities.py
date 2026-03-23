@@ -5,7 +5,10 @@ import requests
 from bs4 import BeautifulSoup
 import logging
 import uuid
-from my_app.plots import * 
+from my_app.plots import *
+import time
+#from db_setup import get_espn_stats, get_column_query 
+
 
 logger = logging.getLogger(__name__)
 
@@ -187,19 +190,19 @@ def get_completed_event_info(url):
                 takedowns = (td_list[4].find_all('p')[0].text.strip(), td_list[4].find_all('p')[1].text.strip())
                 sub = (td_list[5].find_all('p')[0].text.strip(), td_list[5].find_all('p')[1].text.strip())
                 weight_class = td_list[6].text.strip()
-                if td_list[6].find('img'):
-                    src = td_list[6].find('img')['src']
-                    for i in ['perf', 'fight', 'sub', 'ko']:
-                        if i in src:
-                            is_extra = i
-                    if 'belt' in src:
-                        is_title = True
+                if td_list[6].find_all('img'):
+                    for img in td_list[6].find_all('img'):
+                        src = img['src']
+                        for i in ['perf', 'fight', 'sub', 'ko']:
+                            if i in src:
+                                is_extra = i
+                        if 'belt' in src:
+                            is_title = True
                 method = (td_list[7].find_all('p')[0].text.strip(), td_list[7].find_all('p')[1].text.strip())
 
                 round_number = td_list[8].text.strip()
                 time = td_list[9].text.strip()
                 round_time = f"{round_number} - {time}"
-
 
 
             fights[number + 1] = {
@@ -350,5 +353,141 @@ def career_data_cleaner(career_data):
 
     return career_data
 
+def easy_espn_fights_getter(id, url, conn):
+    """gets fighter fights from espn then puts them inside the database easily without hassle"""
+    cursor = conn.cursor()
+    name = cursor.execute('select name from fighters where fighter_id = ?', (id,)).fetchone()
+    name = name[0]
+
+    striking, clinch, ground, _ = get_espn_stats_util(url, name)
+    stats_dict = {'advanced_striking': striking, 'advanced_clinch': clinch, 'advanced_ground': ground}
+    for table, stats in stats_dict.items():
+            for fights in stats.values():
+                for fight in fights:
+                    # Convert fight date from ESPN into datetime too
+                    logger.info('fight found')
+                    column_query, values = get_column_query(fight)
+                    query = f'insert into {table} {column_query} values {values}'
+                    # clean up '-' values
+                    for key in fight:
+                        if fight[key] and fight[key].strip() == '-':
+                            fight[key] = None
+                    params = (id, url, *fight.values())
+                    cursor.execute(query, params)
+                    logger.info(f'successfully inserted into {table} the stats {fight} for {name}')
+
+def get_column_query(fight_dict):
+    '''makes a custom query so i dont have to keep writing queries im so done with that'''
+    column_query = '(fighter_id,espn_url,'
+    values = '(?,?,'
+    for key in fight_dict:
+        if key.lower() in ['%body', '%leg', '%head']:
+            key = f"{key.lower().replace('%', '')}_percentage"
+        column_query += f"{key},"
+        values += '?,'
+    column_query = replace_last(column_query, ",", ")")
+    values = replace_last(values, ",", ")")
+    return column_query, values
+
+def get_espn_stats_util(espn_url, name):
+    time.sleep(random.uniform(0.2, 0.6))
+    #x forwarded only wors for very lazy websites so this was useless but we move
+    # ipv6_random = get_random_ip(ip_list)
+    headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                  "AppleWebKit/537.36 (KHTML, like Gecko) "
+                  "Chrome/128.0.0.0 Safari/537.36",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Referer": "https://www.espn.com/",
+    }      
+    striking_dict, clinching_dict, ground_dict = {}, {}, {}
+    status_code = None
+
+
+
+
+    with requests.Session() as session:
+        try:
+            page = session.get(espn_url.strip(), headers=headers)
+            status_code = page.status_code
+            page.raise_for_status()
+            soup = BeautifulSoup(page.text, 'html.parser')
+        except Exception as e:
+            logger.info(f'exception {e} happened when trying to access {espn_url}')
+            return ({}, {}, {}, status_code)
+        #split it into 3 phases: striking clinch and ground
+
+        thead = soup.find_all('thead', class_='Table__THEAD')
+        tbody = soup.find_all('tbody', class_='Table__TBODY')
+
+ 
+        try:
+            striking_col = thead[0]
+            striking = tbody[0]
+            clinching_col = thead[1]
+            clinching = tbody[1]
+            ground_col = thead[2]
+            ground = tbody[2]
+        except Exception as e:
+            logger.info(f'espn stat getter: no data available, exception: {e}')
+            return ({}, {}, {}, status_code)
+
+        striking_fights_list = []
+        try:
+            for tr in striking.find_all('tr'):
+                striking_data = {}
+                td_list = tr.find_all('td')
+                #but remember that %BODY %HEAD and %LEG stays the same in the dict 
+                for index, col in enumerate([parse_espn_stats(i) for i in striking_col.find_all('th')]):
+                    if index == 2:
+                        continue
+                    if td_list[5].text.strip() == '-':
+                        continue
+                    striking_data[col] = td_list[index].text.strip()
+                if striking_data:
+                    striking_fights_list.append(striking_data)
+            striking_dict[name] = striking_fights_list
+            logger.debug(f'successfully got the striking data for {name}')
+        except Exception as e:
+            logger.error(f'couldnt get the striking data dictionary for {name}, error: {e}')
+
+        clinching_fights_list = []
+        try:
+            for tr in clinching.find_all('tr'):
+                clinching_data = {}
+                td_list = tr.find_all('td')
+                for index, col in enumerate([parse_espn_stats(i) for i in clinching_col.find_all('th')]):
+                    if index == 2:
+                        continue
+                    if len(td_list) > 4 and td_list[4].text.strip() == '-':
+                        continue
+                    clinching_data[col] = td_list[index].text.strip()
+                if clinching_data:
+                    clinching_fights_list.append(clinching_data)
+            clinching_dict[name] = clinching_fights_list
+            logger.debug(f'successfully got the clinching data for {name}')
+        except Exception as e:
+            logger.error(f'couldnt get the clinching data for {name}, error: {e}')
+
+        ground_fights_list = []
+        try:
+
+            for tr in ground.find_all('tr'):
+                ground_data = {}
+                td_list = tr.find_all('td')
+                for index, col in enumerate([parse_espn_stats(i) for i in ground_col.find_all('th')]):
+                    if index == 2:
+                        continue
+                    if len(td_list) > 4 and td_list[4].text.strip() == '-':
+                        continue
+                    ground_data[col] = td_list[index].text.strip()
+                if ground_data:
+                    ground_fights_list.append(ground_data)
+            ground_dict[name] = ground_fights_list
+            logger.debug(f'successfully got the ground data for {name}')
+        except Exception as e:
+            logger.error(f'couldnt get the ground data for {name}, error: {e}')
+
+    return (striking_dict, clinching_dict, ground_dict, status_code)
 
 

@@ -77,6 +77,19 @@ def striking_analysis_plot(fighter_id, db):
               radialaxis=dict(range=[0, 100], tick0=0, dtick=20)
           )
       )
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#EE82EE"),
+        xaxis=dict(
+            gridcolor="rgba(255,255,255,0.1)",
+            zerolinecolor="rgba(255,255,255,0.2)"
+        ),
+        yaxis=dict(
+            gridcolor="rgba(255,255,255,0.1)",
+            zerolinecolor="rgba(255,255,255,0.2)"
+        )
+    )
     
     return fig
 
@@ -98,6 +111,19 @@ def clinching_analysis_plot(fighter_id, db):
               radialaxis=dict(range=[0, 100], tick0=0, dtick=20)
           )
       )
+  fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#EE82EE"),
+        xaxis=dict(
+            gridcolor="rgba(255,255,255,0.1)",
+            zerolinecolor="rgba(255,255,255,0.2)"
+        ),
+        yaxis=dict(
+            gridcolor="rgba(255,255,255,0.1)",
+            zerolinecolor="rgba(255,255,255,0.2)"
+        )
+    )
 
   return fig
 
@@ -120,6 +146,19 @@ def grappling_analysis_plot(fighter_id, db):
               radialaxis=dict(range=[0, 100], tick0=0, dtick=20)
           )
       )
+  fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#EE82EE"),
+        xaxis=dict(
+            gridcolor="rgba(255,255,255,0.1)",
+            zerolinecolor="rgba(255,255,255,0.2)"
+        ),
+        yaxis=dict(
+            gridcolor="rgba(255,255,255,0.1)",
+            zerolinecolor="rgba(255,255,255,0.2)"
+        )
+    )
 
   return fig
 
@@ -181,27 +220,55 @@ def strike_heatmap(fighter_id, db, normalize=True):
         width=400
     )
 
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#EE82EE"),
+        xaxis=dict(
+            gridcolor="rgba(255,255,255,0.1)",
+            zerolinecolor="rgba(255,255,255,0.2)"
+        ),
+        yaxis=dict(
+            gridcolor="rgba(255,255,255,0.1)",
+            zerolinecolor="rgba(255,255,255,0.2)"
+        )
+    )
+
     return fig
 
 def career_plot(fighter_id, db):
     
-  stats = db.execute('''select g.wrestling, g.bjj, g.striking, g.gnp, c.career_score, g.global_rating_scaled, g.global_rating, s.true_ko_power_scaled as ko_power from aggregate_global g join aggregate_career c on g.fighter_id = c.fighter_id join aggregate_striking s on g.fighter_id = s.fighter_id where g.fighter_id = ?''', (fighter_id,)).fetchone()
+    stats = db.execute('''select g.wrestling, g.bjj, g.striking, g.gnp, c.career_score, g.global_rating_scaled, g.global_rating, s.true_ko_power_scaled as ko_power from aggregate_global g join aggregate_career c on g.fighter_id = c.fighter_id join aggregate_striking s on g.fighter_id = s.fighter_id where g.fighter_id = ?''', (fighter_id,)).fetchone()
   
-  df = pd.DataFrame(dict(
+    df = pd.DataFrame(dict(
     r=[round(stats['wrestling']), round(stats['bjj']), round(stats['ko_power']), round(stats['striking']), round(stats['gnp']), round(stats['career_score'])],
     theta=['Wrestling', 'BJJ', 'X Factor Power', 'Striking', 'GNP', 'Career']
       )
     )
     
 
-  fig = px.line_polar(df, r='r', theta='theta', line_close=True)
-  fig.update_layout(
+    fig = px.line_polar(df, r='r', theta='theta', line_close=True)
+    fig.update_layout(
           polar=dict(
               radialaxis=dict(range=[0, 100], tick0=0, dtick=20)
           )
       )
   
-  return fig
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#EE82EE"),
+        xaxis=dict(
+            gridcolor="rgba(255,255,255,0.1)",
+            zerolinecolor="rgba(255,255,255,0.2)"
+        ),
+        yaxis=dict(
+            gridcolor="rgba(255,255,255,0.1)",
+            zerolinecolor="rgba(255,255,255,0.2)"
+        )
+    )
+  
+    return fig
 
 def comparison_plot(fighter1, fighter2, db, compare_type="striking"):
     
@@ -318,6 +385,19 @@ def comparison_plot(fighter1, fighter2, db, compare_type="striking"):
         barmode="relative",
         title="Fighter Comparison",
         xaxis=dict(range=[-1, 1])
+    )
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#EE82EE"),
+        xaxis=dict(
+            gridcolor="rgba(255,255,255,0.1)",
+            zerolinecolor="rgba(255,255,255,0.2)"
+        ),
+        yaxis=dict(
+            gridcolor="rgba(255,255,255,0.1)",
+            zerolinecolor="rgba(255,255,255,0.2)"
+        )
     )
 
     fig.update_yaxes(autorange="reversed")

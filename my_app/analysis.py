@@ -6,6 +6,7 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 import math
+import base64
 # from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 logger = logging.getLogger(__name__)
@@ -125,7 +126,9 @@ def career_analysis(db, id, cached=False):
     }
     
     records = db.execute('select * from records where fighter_1 = ?', (id,)).fetchall()
+    fights = db.execute('select * from fights where fighter_a = ? or fighter_b = ?', (id, id)).fetchall()
     sorted_records = sorted(records, key=lambda x: datetime.strptime(x['date'], '%b. %d, %Y'), reverse=True)
+    sorted_fights = sorted(fights, key=lambda x: datetime.strptime(x['date'], '%b. %d, %Y'), reverse=True)
 
     if not records:
         return None
@@ -171,7 +174,7 @@ def career_analysis(db, id, cached=False):
     num_of_mins = get_fighter_minutes(records)
     
 
-    last_5 = sorted_records[0:5] if len(sorted_records) >= 5 else sorted_records
+    last_5 = sorted_fights[0:5] if len(sorted_fights) >= 5 else sorted_fights
     last_5 = last_5[::-1]
     win_streak = 0
     rounds=0
@@ -385,7 +388,7 @@ def global_rating(conn=None, id=None, career_hash=None):
     }
 
     df = pd.DataFrame(gl_hash)
-
+    print(id, '\n', df.to_string())
     return df
 
 def career_ranking_analysis(conn=None, fighter_id=2373):
@@ -512,7 +515,7 @@ def career_ranking_analysis(conn=None, fighter_id=2373):
             'min_maxed_loss_elo':[min_maxed_loss_elo],
             'elo_score':[elo_score],
             'fall_off_rate':[fall_off_rate],
-            'fall_off_penalty':fall_off_penalty,
+            'fall_off_penalty':[fall_off_penalty],
             'title_score':[title_score],
             'win_score':[win_score],
         }
@@ -525,7 +528,7 @@ def career_ranking_analysis(conn=None, fighter_id=2373):
 
     # print(fighter_df)
     # print(highest_win_streak, min_maxed_loss_elo, finish_rate, win_rate)
-
+    print(fighter_id, '\n', fighter_df.to_string())
     return fighter_df
 
 
@@ -582,18 +585,15 @@ def fight_analysis(db, fight):
     #incomplete
     fighter_1 = {}
     fighter_2 = {}
-    if fight['result'] == 'win':
+    if fight['winner'] == fight['fighter_a']:
         fighter_1['result'] = 'winner'
         fighter_2['result'] = 'loser'
     else:
         fighter_1['result'] = 'loser'
         fighter_2['result'] = 'winner'
 
-    fighter_1['name'] = db.execute('select name from fighters where fighter_id = ?', (fight['fighter_1'],)).fetchone()[0]
-    fighter_2['name'] = db.execute('select name from fighters where fighter_id = ?', (fight['fighter_2'],)).fetchone()[0]
-
-    fighter_1['id'] = fight['fighter_1']
-    fighter_2['id'] = fight['fighter_2']
+    fighter_1['fighter_id'], fighter_1['name'] = db.execute('select fighter_id, name from fighters where fighter_id = ?', (fight['fighter_a'],)).fetchone()
+    fighter_2['fighter_id'], fighter_2['name'] = db.execute('select fighter_id, name from fighters where fighter_id = ?', (fight['fighter_b'],)).fetchone()
 
     return (fighter_1, fighter_2)
 
@@ -611,22 +611,35 @@ def fighter_striking_analysis(fighter_id, conn=None):
     total strike attempts TSA and landed TSL, strikes absorbed per min, strike accuracy, strikes landed per min, str def precentag'''
     conn.row_factory = sq.Row
     db = conn.cursor()
-    query = f'select s.SLpM, s.SApM, s.str_def, a.* from advanced_stats s join advanced_striking a on s.fighter_id = a.fighter_id where s.fighter_id = {fighter_id}'
+    name = db.execute('select name from fighters where fighter_id = ?', (fighter_id,)).fetchone()
     # query_2 = 'select * from advanced_striking'
     rows = db.execute('select * from records where fighter_1 = ?', (fighter_id,)).fetchall()
     num_of_fights = len(rows)
     num_of_mins = get_fighter_minutes(rows)
     # print(num_of_mins)
 
-    df = pd.read_sql_query(query, conn)
-    
+    stats_df = pd.read_sql_query(
+        "SELECT fighter_id, SLpM, SApM, str_def FROM advanced_stats WHERE fighter_id=?",
+        conn,
+        params=(fighter_id,)
+    )
+
+    df = pd.read_sql_query(
+        "SELECT * FROM advanced_striking WHERE fighter_id=?",
+        conn,
+        params=(fighter_id,)
+    ) 
+
     df = df.drop_duplicates()
     df = df.replace({'-': None})
     df = df.map(lambda x: x.replace("\n", "") if isinstance(x, str) else x)
-    df = df.dropna(subset=['sdhl_a', 'sdbl_a', 'sdll_a', 'tsl', 'tsa', 'ssl', 'ssa'])   
-    df[['sdhl', 'sdha']] = df['sdhl_a'].str.split('/', expand=True)
-    df[['sdbl', 'sdba']] = df['sdbl_a'].str.split('/', expand=True)
-    df[['sdll', 'sdla']] = df['sdll_a'].str.split('/', expand=True)
+    df = df.dropna(subset=['sdhl_a', 'sdbl_a', 'sdll_a', 'tsl', 'tsa', 'ssl', 'ssa']) 
+    try:  
+        df[['sdhl', 'sdha']] = df['sdhl_a'].str.split('/', expand=True)
+        df[['sdbl', 'sdba']] = df['sdbl_a'].str.split('/', expand=True)
+        df[['sdll', 'sdla']] = df['sdll_a'].str.split('/', expand=True)
+    except Exception as e:
+        logger.error(f'COULDNT GET IT, HIS NAME IS {name['name']}')
     
     df = non_ufc_fight_remover(fighter_id, df, db)
 
@@ -639,7 +652,7 @@ def fighter_striking_analysis(fighter_id, conn=None):
 
     df = df.drop(columns=['sdhl_a', 'sdbl_a', 'sdll_a', 'tsl_tsa', 'date', 'opponent', 'espn_url', 'res'])
 
-    percent_cols = ['body_percentage', 'head_percentage', 'leg_percentage', 'str_def']
+    percent_cols = ['body_percentage', 'head_percentage', 'leg_percentage']
 
     for col in percent_cols:
         df[col] = (
@@ -650,19 +663,8 @@ def fighter_striking_analysis(fighter_id, conn=None):
         )
         df[col] = pd.to_numeric(df[col], errors='coerce') / 100
 
-
-    #---- more accruate defense -----
-    total_elo = 0
-    total_opponents = 0
-    for opp in rows:
-        x = db.execute('select elo from elo where fighter_id = ?', (opp['fighter_2'],)).fetchone()[0]
-        total_elo += x
-        total_opponents += 1
-    all_avg_opp_elo = total_elo/total_opponents if total_opponents > 0 else 1100
-    df['str_def'] = df['str_def'] * (all_avg_opp_elo/1200)
-    #---------------------------------
-
-    df = (df.groupby(['fighter_id', 'SLpM', 'SApM', 'str_def']).agg({
+    # Step 1: aggregate your numeric stats
+    agg_df = df.groupby(['fighter_id']).agg({
         'tsl':'sum',
         'tsa':'sum',
         'ssl':'sum',
@@ -677,11 +679,32 @@ def fighter_striking_analysis(fighter_id, conn=None):
         'sdba':'sum',
         'sdll':'sum',
         'sdla':'sum'
-    })).round({
-        'body_percentage':3,
-        'head_percentage':3,
-        'leg_percentage':3
-    })
+    }).reset_index()  # reset_index keeps fighter_id as a column
+
+    # Step 2: merge the SLpM, SApM, str_def from stats_df
+    agg_df = agg_df.merge(
+        stats_df[['fighter_id', 'SLpM','SApM','str_def']],  # only the columns you need
+        on="fighter_id",                
+        how='left'                          
+    )
+    # Step 3: convert str_def to numeric correctly
+    agg_df['str_def'] = (
+        agg_df['str_def'].astype(str).str.replace('%','', regex=False)
+    )
+    agg_df['str_def'] = pd.to_numeric(agg_df['str_def'], errors='coerce') / 100
+
+    df = agg_df
+
+    #---- more accruate defense -----
+    total_elo = 0
+    total_opponents = 0
+    for opp in rows:
+        x = db.execute('select elo from elo where fighter_id = ?', (opp['fighter_2'],)).fetchone()[0]
+        total_elo += x
+        total_opponents += 1
+    all_avg_opp_elo = total_elo/total_opponents if total_opponents > 0 else 1100
+    df['str_def'] = df['str_def'] * (all_avg_opp_elo/1200)
+    #---------------------------------
 
     
     # df['ts_acc'] = df['tsl'] / df['tsa'] #total strikes
@@ -749,23 +772,23 @@ def fighter_striking_analysis(fighter_id, conn=None):
     df['leg_kicks'] = (df['sdll'] / num_of_mins) * df['sdl_acc']
     df['sig_acc'] = df['ss_acc'] * ((0.5*df['sdh_acc']) + (0.25*df['sdb_acc']) + (0.25*df['sdl_acc']))
 
-    df = df.round({
-        'ts_acc':2,
-        'ss_acc':2,
-        'sdh_acc':2,
-        'sdb_acc':2,
-        'sdl_acc':2,
-        'total_ssl_acc':2,
-        'total_ssa_percentage':2,
-        'kd_pm':2,
-        'tsl_pm':2,
-        'true_ko_power':2,
-        'avg_ko_opp_durability': 2,
-        'avg_ko_opp_elo': 2,
-        'effective_volume':2,
-        'leg_kicks':2,
-        'sig_acc':2
-    })
+    # df = df.round({
+    #     'ts_acc':2,
+    #     'ss_acc':2,
+    #     'sdh_acc':2,
+    #     'sdb_acc':2,
+    #     'sdl_acc':2,
+    #     'total_ssl_acc':2,
+    #     'total_ssa_percentage':2,
+    #     'kd_pm':2,
+    #     'tsl_pm':2,
+    #     'true_ko_power':2,
+    #     'avg_ko_opp_durability': 2,
+    #     'avg_ko_opp_elo': 2,
+    #     'effective_volume':2,
+    #     'leg_kicks':2,
+    #     'sig_acc':2
+    # })
 
     print(fighter_id, '\n', df.to_string())
     return df
@@ -814,7 +837,7 @@ def fighter_clinch_analysis(fighter_id, conn=None):
         'scha':'sum',
         'scll':'sum',
         'scla':'sum'
-    }))
+    })).reset_index()
 
     
     # df['ts_acc'] = df['tsl'] / df['tsa'] #total strikes
@@ -1357,53 +1380,109 @@ def get_scaled_attributes(best=True, db=None, fighter_id = 2373, quantity=0):
     return sorted_dict
 
 def total_analysis_update(fighter_id, name, db, conn):
-    striking_df = fighter_striking_analysis(fighter_id, conn)
-    clinching_df = fighter_clinch_analysis(fighter_id=fighter_id, conn=conn)
-    grappling_df = fighter_grappling_analysis(fighter_id=fighter_id, name=name, conn=conn)
-    global_df = global_rating(conn, fighter_id)
-    career_df = career_ranking_analysis(conn, fighter_id)
 
+    df_list = [
+        'striking', 
+        'clinching', 
+        'grappling', 
+        'global', 
+        'career'
+    ]
 
-    df_list = {
-        'striking':striking_df, 
-        'clinching':clinching_df, 
-        'grappling':grappling_df, 
-        'global':global_df, 
-        'career':career_df
-    }
+    # for key, df in df_list.items():
+    #     if 'fighter_id' not in df.columns:
+    #         df['fighter_id'] = fighter_id
 
-    for key, fighter_df in df_list.items():
+    for key in df_list:
         query = f'select * from aggregate_{key}'
         total_df = pd.read_sql_query(query, con=conn)
+        for col in total_df.columns:
+            if total_df[col].dtype == object:
+                try:
+                    total_df["file_data"] = total_df["file_data"].apply(lambda x: base64.b64encode(x).decode() if isinstance(x, (bytes, bytearray)) else x)
+                except:
+                    pass
         features_to_scale = features[key]
         high, low = art_style_high_low[key]
-        fighter_df = get_individual_z_score(features_to_scale, fighter_df, total_df, low, high)
-
         if key == 'striking':
+            fighter_df = fighter_striking_analysis(fighter_id, conn)
+            fighter_df = get_individual_z_score(features_to_scale, fighter_df, total_df, low, high)
             fighter_df['SApM_scaled'] = 100 - fighter_df['SApM_scaled']
 
             fighter_df['Boxing'] = 0.35 * fighter_df['true_ko_power_scaled'] + 0.15 * fighter_df['effective_volume_scaled'] + 0.25 * fighter_df['str_def_scaled'] + 0.25 * fighter_df['SApM_scaled']
             fighter_df['KickBoxing'] = 0.25 * fighter_df['true_ko_power_scaled'] + 0.15 * fighter_df['effective_volume_scaled'] + 0.20 * fighter_df['str_def_scaled'] + 0.10 * fighter_df['SApM_scaled'] + 0.30 * fighter_df['leg_kicks_scaled']
         elif key == 'clinching':
+            fighter_df = fighter_clinch_analysis(fighter_id=fighter_id, conn=conn)
+            fighter_df = get_individual_z_score(features_to_scale, fighter_df, total_df, low, high)
             fighter_df["Muay"] = 0.2 * fighter_df['clinch_strikes_pm_scaled'] + 0.8 * fighter_df['effective_accuracy_scaled']
         elif key == 'grappling':
+            fighter_df = fighter_grappling_analysis(fighter_id=fighter_id, name=name, conn=conn)
+            fighter_df = get_individual_z_score(features_to_scale, fighter_df, total_df, low, high)
+
             fighter_df["Wrestling"] = 0.34 * fighter_df['effective_takedowns_scaled'] + 0.33 * fighter_df['effective_control_scaled'] + 0.33 * fighter_df['td_def_scaled']
             fighter_df["BJJ"] = 0.7 * fighter_df['effective_sub_threat_scaled'] + 0.3 * fighter_df['bjj_defence_scaled']
             fighter_df['GNP'] = fighter_df['effective_gnp_scaled'] 
-        elif key == 'career':
-            fighter_df['career_score'] = 0.65 * fighter_df['elo_score_scaled'] + 0.35 * fighter_df['win_score_scaled']
 
-            fighter_df['career_score'] *= fighter_df['fall_off_penalty']
+        elif key == 'global':
+            fighter_df = global_rating(conn, fighter_id)
+            fighter_df = get_individual_z_score(features_to_scale, fighter_df, total_df, low, high)
+            print(total_df.columns)
+            print(fighter_df.columns)
+
+        elif key == 'career':
+            fighter_df = career_ranking_analysis(conn, fighter_id)
+            #backup_list = [fighter_df['debut'], fighter_df['last_fight'], fighter_df['cage_time'], fighter_df['average_fight_time']] 
+            # for col in fighter_df.columns: 
+            #     if fighter_df[col].dtype == object: 
+            #         try: 
+            #             fighter_df['file_data'] = fighter_df['file_data'].apply(lambda x: base64.b64encode(x).decode() 
+            #             if isinstance(x, (bytes, bytearray)) else x) 
+            #         except: pass 
+            
+            # fighter_df = fighter_df.map( lambda x: x.item() if hasattr(x, "item") else x ) 
+        
+
+            # for col in fighter_df.columns: 
+            #     fighter_df[col] = pd.to_numeric(fighter_df[col], errors='coerce')
+            
+            # fighter_df['debut'] = backup_list[0]
+
+            fighter_df['fighter_id'] = fighter_id
+            fighter_df = get_individual_z_score(features_to_scale, fighter_df, total_df, low, high)
+            print(total_df.columns)
+            print(fighter_df.columns)
+            try:
+                fighter_df['career_score'] = 0.65 * fighter_df['elo_score_scaled'] + 0.35 * fighter_df['win_score_scaled']
+
+                fighter_df['career_score'] *= fighter_df['fall_off_penalty']
+            except Exception as e:
+                fighter_df['career_score'] = 50
+                print(f'exception occued: {e} in career func')
+
 
             mask = fighter_df['title_score'] > 0.8
 
             fighter_df.loc[mask, 'career_score'] *= ( 1 + (fighter_df.loc[mask, 'title_score'] - 0.8) / ((3 - 0.8) * 3))
 
             fighter_df['career_score'] = fighter_df['career_score'].clip(upper=100)
+
+
         
         logger.info(f'successfully updated the aggregate data for {fighter_id}')
 
-        update_sql_table_dynamic(fighter_df, f'aggregate_{key}', 'fighter_id', conn)
+        # update_sql_table_dynamic(fighter_df, f'aggregate_{key}', fighter_id, conn)
+
+        conn.cursor().execute(
+            f"DELETE FROM aggregate_{key} WHERE fighter_id = ?",
+            (fighter_id,)
+        )
+
+        fighter_df.to_sql(
+            f"aggregate_{key}",
+            conn,
+            if_exists="append",
+            index=False
+        )
 
 def get_individual_z_score(
     features_to_scale=None,
@@ -1422,73 +1501,97 @@ def get_individual_z_score(
     low               : lower quantile clip (ex: 0.02)
     up                : upper quantile clip (ex: 0.98)
     """
-
     for col in features_to_scale:
+        try:
+            series = total_df[col].astype('float')
 
-        # --- Population distribution ---
-        series = total_df[col]
+            median = series.median()
+            q1 = series.quantile(0.25)
+            q3 = series.quantile(0.75)
+            iqr = q3 - q1
 
-        # --- Same logic as your original function ---
-        median = series.median()
-        q1 = series.quantile(0.25)
-        q3 = series.quantile(0.75)
-        iqr = q3 - q1
+            if iqr == 0:
+                fighter_df[col + "_scaled"] = 50
+                continue
 
-        # Prevent divide-by-zero
-        if iqr == 0:
+            z = (fighter_df[col] - median) / iqr
+
+            # --- Compute clipping bounds from POPULATION ---
+            pop_z = (series - median) / iqr
+
+            lower_bound = pop_z.quantile(low)
+            upper_bound = pop_z.quantile(up)
+
+            z_clipped = z.clip(lower=lower_bound, upper=upper_bound)
+
+            # --- Map using population scale ---
+            scaled = (
+                (z_clipped - lower_bound)
+                / (upper_bound - lower_bound)
+            ) * 99 + 1
+
+            fighter_df[col + "_scaled"] = scaled.round(2)
+        except Exception as e:
             fighter_df[col + "_scaled"] = 50
-            continue
-
-        # --- Individual z-score (KEY CHANGE) ---
-        z = (fighter_df[col] - median) / iqr
-
-        # --- Compute clipping bounds from POPULATION ---
-        pop_z = (series - median) / iqr
-
-        lower_bound = pop_z.quantile(low)
-        upper_bound = pop_z.quantile(up)
-
-        z_clipped = z.clip(lower=lower_bound, upper=upper_bound)
-
-        # --- Map using population scale ---
-        scaled = (
-            (z_clipped - lower_bound)
-            / (upper_bound - lower_bound)
-        ) * 99 + 1
-
-        fighter_df[col + "_scaled"] = scaled.round(2)
+            print(f"there was an error trying to find a z score for the column: {col}")
 
     return fighter_df
 
-def update_sql_table_dynamic(df, table_name, id_col, conn):
+def update_sql_table_dynamic(df, table_name, fighter_id, conn):
     """
-    Updates multiple columns in a SQL table dynamically from a dataframe.
-    
-    df        : DataFrame with all data (including ID column)
+    Updates or inserts a row in a SQL table dynamically from a dataframe.
+
+    df        : DataFrame containing one row (must include id_col)
     table_name: SQL table to update
-    id_col    : column to match rows in SQL
+    id_col    : column used as the row identifier
     conn      : sqlite3 connection
     """
-    columns = [c for c in df.columns if c != id_col]  # exclude ID column
-    
-    # Build SET clause dynamically
-    set_clause = ", ".join([f"{col} = ?" for col in columns])
-    query = f"UPDATE {table_name} SET {set_clause} WHERE {id_col} = ?"
-    
-    # Prepare values for executemany
-    row = df.iloc[0]  # get the first (and only) row as a Series
-    values = tuple(row[col] for col in columns) + (row[id_col],)
     
     cursor = conn.cursor()
+    row = df.iloc[0]
+
+    # All columns except the ID
+    columns = [c for c in df.columns if c != 'fighter_id']
+
+    # Check if row exists
+    exists = cursor.execute(
+        f"SELECT fighter_id FROM {table_name} WHERE fighter_id = ?",
+        (fighter_id,)
+    ).fetchone()
+
+    if exists:
+        # -------- UPDATE --------
+        set_clause = ", ".join([f"{col} = ?" for col in columns])
+
+        query = f"""
+        UPDATE {table_name}
+        SET {set_clause}
+        WHERE fighter_id = ?
+        """
+
+        values = tuple(row[col] for col in columns) + (fighter_id,)
+
+    else:
+        # -------- INSERT --------
+        all_cols = df.columns.tolist()
+        col_string = ", ".join(all_cols)
+        placeholders = ", ".join(["?"] * len(all_cols))
+
+        query = f"""
+        INSERT INTO {table_name} ({col_string})
+        VALUES ({placeholders})
+        """
+
+        values = tuple(row[col] for col in all_cols)
+
     cursor.execute(query, values)
     conn.commit()
-
-
+        
 
 
 # with sq.connect(db_path) as conn:
-#     for key, val in art_style_high_low.items():
-#         total_fighting_analysis(key)
+
+#     total_analysis_update(1637, "Anthony Hernandez", "", conn)
 
 # total_fighting_analysis('career')
 

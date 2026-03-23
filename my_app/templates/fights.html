@@ -124,12 +124,18 @@ table th, table td {
                 <div class="mb-5">
                     <h1 style="text-align:center">Events Table</h1>
                 </div>
-                <table class="table table-dark table-striped table-hover">
+                <table class="table table-dark table-striped table-sm text-center align-middle table-hover">
                     <thead>
                         {% for num, fight in fights.items() %}
                             {% for col in fight %}
                                 {% if num == 1 %}
-                                    <th>{{col | replace("_", " ") | title()}}</th>
+                                    {% if col == "is_extra" %}
+                                        <th>Fight Bonus</th>
+                                    {% elif col == "str" %}
+                                        <th>Significant Strikes</th>
+                                    {% else %}
+                                        <th>{{col | replace("_", " ") | title()}}</th>
+                                    {% endif %}
                                 {% endif %}
                             {% endfor %}
                         {% endfor %}
@@ -140,8 +146,23 @@ table th, table td {
                         {% for key, data in fight.items() %}
                             {% if key == "is_title" %}
                                 <td>{{ "🥇" if data else "❌" }}</td>
+                            {% elif data is sequence and not (data is string) %}
+                                <td>
+                                    <p>{{data[0]}}</p>
+                                    <p>{{data[1]}}</p>
+                                </td>
+                            {% elif key == "winner" %}
+                                <td>
+                                    <p style="color: #baff65">{{data}}</p>
+                                    <p><br></p>
+                                </td>
+                            {% elif key == "loser" %}
+                                <td>
+                                    <p><br></p>
+                                    <p style="color: #8d0000">{{data}}</p>
+                                </td>
                             {% else %}
-                                <td>{{ data }}</td>
+                                <td>{{ data | title() }}</td>
                             {% endif %}
                         {% endfor %}
                     </tr>
