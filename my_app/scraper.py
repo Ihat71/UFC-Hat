@@ -534,6 +534,7 @@ def create_fights_table(db):
             fighter_2 INTEGER,
             fight_url TEXT UNIQUE,
             winner TEXT,
+            winner_id INTEGER,
             title_fight TEXT,
             bonus TEXT,
             method TEXT,
@@ -559,7 +560,7 @@ def create_fights_table(db):
 
 def fight_exists(db, fight_url):
     result = db.execute(
-        "SELECT 1 FROM fights WHERE fight_url=? LIMIT 1",
+        "SELECT 1 FROM fights_extended WHERE fight_url=? LIMIT 1",
         (fight_url,)
     ).fetchone()
 
@@ -574,6 +575,7 @@ def save_fight_to_db(db, fight):
             fighter_2,
             fight_url,
             winner,
+            winner_id,
             title_fight,
             bonus,
             method,
@@ -581,13 +583,14 @@ def save_fight_to_db(db, fight):
             time,
             fight_data
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         fight.get('fight_id'),
         fight.get('fighter_1').get('fighter_id'),
         fight.get('fighter_2').get('fighter_id'),
         fight.get("fight_url"),
         fight.get("winner"),
+        fight.get("winner_id"),
         fight.get("title_fight"),
         fight.get("bonus"),
         fight.get("method"),
@@ -597,8 +600,11 @@ def save_fight_to_db(db, fight):
         )
     )
 
+    logger.info(f'inserted into rounds the fight {fight['fight_id']} between {fight['fighter_1']['fighter_id']} and {fight['fighter_2']['fighter_id']}')
 
-def fight_scraper(do_all=True):
+
+
+def fight_scraper(urls=[]):
     """if do_all is true it means the function will scrape all events"""
     with sq.connect(db_path) as conn:
         '''this scraper scrapes fight data from individual fights'''
@@ -609,7 +615,7 @@ def fight_scraper(do_all=True):
                 "Chrome/128.0.0.0 Safari/537.36"
             ),
             "Accept-Language": "en-US,en;q=0.9",
-            "Referer": "https://www.espn.com/",
+            "Referer": "https://www.ufcstats.com/",
         }
 
         # NOTE TO SELF:
@@ -628,11 +634,8 @@ def fight_scraper(do_all=True):
         # create table once
         create_fights_table(db)
 
-        rows = db.execute("SELECT event_url as url, event_date as date FROM events").fetchall()
-        events_url = [row["url"] for row in rows]
-
         with requests.Session() as session:
-            for url in events_url:
+            for url in urls:
                 try:
                     response = session.get(url, headers=headers)
                     response.raise_for_status()
@@ -672,7 +675,7 @@ def fight_scraper(do_all=True):
                     tr_list = tbody.find_all("tr")
 
                     tr_list_helper(
-                        tr_list, session, db, wc_index, headers, fight_date
+                        tr_list, session, conn, db, wc_index, headers, fight_date
                     )
 
                     # commit once per event (FAST)
@@ -682,7 +685,10 @@ def fight_scraper(do_all=True):
                     logger.error(f"There was an exception requesting url: {e}")
 
 
-def tr_list_helper(tr_list, session, db, wc_index, headers, date):
+def tr_list_helper(tr_list, session, conn, db, wc_index, headers, date):
+    d = date
+    new_date = datetime.strptime(date, r"%B %d, %Y")
+    date = new_date.strftime(r"%b. %d, %Y")
 
     for tr in tr_list:
 
@@ -691,9 +697,9 @@ def tr_list_helper(tr_list, session, db, wc_index, headers, date):
             "fighter_2": {},
         }
 
-        date = datetime.strptime(date, r"%B %d, %Y")
-        date = date.strftime(r"%b. %d, %Y")
         fight['date'] = date
+        fight['new_date'] = d
+
 
         title_fight = False
         bonus = None
@@ -729,8 +735,10 @@ def tr_list_helper(tr_list, session, db, wc_index, headers, date):
         # winner
         if td_list[0].text.strip().lower() == "win":
             fight["winner"] = fight["fighter_1"]["name"]
+            fight['winner_id'] = fight['fighter_1']['fighter_id']
         else:
-            fight["winner"] = None
+            fight["winner"] = fight["fighter_2"]["name"]
+            fight['winner_id'] = fight['fighter_2']['fighter_id']
 
         # -------------------------
         # fight URL
@@ -753,7 +761,10 @@ def tr_list_helper(tr_list, session, db, wc_index, headers, date):
         # -------------------------
         # bonuses / belts
         # -------------------------
-        weight_class = td_list[wc_index]
+        if td_list[wc_index]:
+            weight_class = td_list[wc_index]
+            x = td_list[wc_index].find('p').text.strip().lower().replace(' ', '')
+            fight['weight_class'] = x[0].upper() + x[1:]
 
         for img in weight_class.find_all("img"):
             src = img.get("src", "")
@@ -850,7 +861,7 @@ def tr_list_helper(tr_list, session, db, wc_index, headers, date):
                     fight["fighter_1"][header] = f1_cols[i].text.strip()
                     fight["fighter_2"][header] = f2_cols[i].text.strip()
                         
-            fight['fight_id'] = get_fight_id(db, fight)
+            fight['fight_id'] = get_fight_id(conn, db, fight)
             rounds = round_data(db, fight, fight_soup)
             parsed_rounds = table_parser(rounds, fight['fight_id'])
 
@@ -866,19 +877,53 @@ def tr_list_helper(tr_list, session, db, wc_index, headers, date):
         except Exception as e:
             logger.error(f"Error processing fight: {e}")
 
-def get_fight_id(db, fight):
+def get_fight_id(conn, db, fight):
     fighter_1 = fight['fighter_1']['fighter_id']
     fighter_2 = fight['fighter_2']['fighter_id']
-    winner = fight['winner']
+    winner = fight['winner_id']
     date = fight['date']
-    placeholders = (fighter_1, fighter_2, fighter_2, fighter_1, winner, date)
-    row = db.execute('''select fight_id from fights where ((fighter_a = ? and fighter_b = ?)
-    or (fighter_b = ? and fighter_a = ?)) and winner = ? and date = ?''', placeholders).fetchone()
+
+    placeholders = (fighter_1, fighter_2, fighter_1, fighter_2, winner, date)
+
+    row = db.execute('''
+        SELECT fight_id
+        FROM fights
+        WHERE (
+            (fighter_a = ? AND fighter_b = ?)
+            OR
+            (fighter_b = ? AND fighter_a = ?)
+        )
+        AND winner = ?
+        AND date = ?
+    ''', placeholders).fetchone()
 
     if row:
         return row['fight_id']
+
+    event_row = db.execute('select event_id from events where event_date = ?', (fight['new_date'],)).fetchone()
+
+    db.execute('''
+        INSERT INTO fights (
+            event_id, date, fighter_a, fighter_b, winner, weight_class, method, round_ended, time_ended, is_title_fight
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (
+        event_row['event_id'],
+        fight['date'],
+        fighter_1,
+        fighter_2,
+        winner,
+        fight['weight_class'],
+        fight['method'],
+        fight['round'],
+        fight['time'],
+        fight['title_fight']
+    ))
+
+    conn.commit()
+
+    return db.lastrowid
     
-    return None
 
 def round_data(db, fight, page):
     rounds = {
@@ -922,9 +967,10 @@ def table_parser(rounds, fight_id):
         round_num = 0
         for body in bodies:
             rows = body.find_all('tr')
+            # thead = body.find_previous('thead')
+            # round_num = thead.text.lower().replace(' ', '_')
             if not rows:
                 continue
-            round_num += 1
             for r_index, row in enumerate(rows):
 
                 cols = row.find_all("td")
@@ -935,7 +981,8 @@ def table_parser(rounds, fight_id):
                 # # ---------------- ISOLATION
 
                 for i, header in enumerate(headers):
-
+                    if header == 'fighter':
+                        round_num+=1
                     parsed.append(
                         {
                             "fight_id": fight_id,
@@ -955,21 +1002,29 @@ def table_parser(rounds, fight_id):
 # ------------------------------------------------
 
 def save_to_rounds(db, rounds):
+    logger.info('starting to insert the data into rounds')
+    try:
+        for r in rounds:
+            # fight = db.execute('select fight_id from figths where fight_id = ?', (r['fight_id'],)).fetchone()
+            # if not fight:
+            #     db.execute('insert into fights values ()')
+            db.execute(
+                """
+                insert into rounds
+                (fight_id, round, stat_type, stat, fighter_1, fighter_2)
+                values (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    r["fight_id"],
+                    r["round"],
+                    r["stat_type"],
+                    r["stat"],
+                    r["fighter_1"],
+                    r["fighter_2"],
+                ),
+            )
+    except Exception as e:
+        logger.error('error inserting data into rounds')
+    
+    logger.info('successfully inserted the data into rounds')
 
-    for r in rounds:
-
-        db.execute(
-            """
-            insert into rounds
-            (fight_id, round, stat_type, stat, fighter_1, fighter_2)
-            values (?, ?, ?, ?, ?, ?)
-            """,
-            (
-                r["fight_id"],
-                r["round"],
-                r["stat_type"],
-                r["stat"],
-                r["fighter_1"],
-                r["fighter_2"],
-            ),
-        )

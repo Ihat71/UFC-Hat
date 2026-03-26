@@ -20,7 +20,14 @@ def setup():
     # advanced_table_setup()
     #fights_table_setup()
     # advanced_espn_setup()
-    fight_scraper()
+    with sq.connect(db_path) as conn:
+
+        conn.row_factory = sq.Row
+        db = conn.cursor()
+
+        rows = db.execute("SELECT event_url as url, event_date as date FROM events").fetchall()
+        events_url = [row["url"] for row in rows]
+    fight_scraper(events_url)
     ...
 def update():
     update_records_and_fights()
@@ -38,7 +45,7 @@ def tests():
     #total_fighting_analysis('career')
 
 def main():
-    update()
+    setup()
     # setup()
     # create_aggregate_tables()
     #tests()
