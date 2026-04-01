@@ -424,7 +424,8 @@ def fighter(id):
     career_hash['finish_rate'] = f'{career_hash['finish_rate'] * 100 : .1f}%'
     career_hash['win_rate'] = f'{career_hash['win_rate'] * 100 : .1f}%'
     data_hash = career_hash
-    print(data_hash)
+    fights = get_career_fights()
+    #print(fights)
     last_5 = data_hash['last_5']
     if request.method == 'POST':
         quantity = int(request.form.get("num", 5))
@@ -445,6 +446,8 @@ def fighter(id):
                 data_hash = get_hash_data(db, 'global', id)
                 weaknesses = get_scaled_attributes(best=False, db=db, fighter_id=id, quantity=quantity)
                 strengths = get_scaled_attributes(best=True, db=db, fighter_id=id, quantity=quantity)
+            elif selection == "record":
+                fights = get_career_fights(fighter_id=id)
             else:  
                 weaknesses = get_scaled_attributes(best=False, db=db, fighter_id=id, quantity=5)
                 strengths = get_scaled_attributes(best=True, db=db, fighter_id=id, quantity=5)
@@ -452,17 +455,58 @@ def fighter(id):
             return apology('Could not find this fighter! He probably does not have registered fight stats in espn')
 
     return render_template('fighter.html', id=id, fighter=fighter, elo_data_hash=elo_hash, selection=selection, plot=plot, data_hash=data_hash, last_5=last_5, last_fight=career_hash['last_fight'], heat_map=heat_map, weaknesses=weaknesses, 
-                           strengths=strengths, quantity=quantity)
+                           strengths=strengths, quantity=quantity, fights=fights)
 
 @app.route('/versus/<fight_id>/', methods=['GET', 'POST'])
 @login_required
 def versus(fight_id):
     conn, db = get_db()
-    fight = db.execute('select * from fights where fight_id = ?', (fight_id,)).fetchone()
 
-    fighter_1, fighter_2 = fight_analysis(db, fight)
+    #gotta fix fighter_a and fighter_b to give accurate data from rounds table and that's about it
+    fight, event, fighter_a, fighter_b, meta = fight_analysis(db, fight_id)
+    fight['fighter_a']['elo_diff'] = fight['fighter_a']['new_elo'] - fight['fighter_a']['elo']
+    fight['fighter_b']['elo_diff'] = fight['fighter_b']['new_elo'] - fight['fighter_b']['elo']
 
-    return render_template('versus.html', fighter_1=fighter_1, fighter_2=fighter_2)
+    striking = {
+        "fighter_a": {
+            "total_strikes_landed": fighter_a['total_str']['landed'],
+            "total_strikes_attempted": fighter_a['total_str']['attempted'],
+            "total_significant_strikes_landed": fighter_a['sig_str']['landed'],
+            "total_significant_strikes_attempted": fighter_a['sig_str']['attempted'],
+            "significant_strike_percent":fighter_a['sig_str_percent'],
+            "Knock-downs": fighter_a['kd']
+        },
+        "fighter_b": {
+            "total_strikes_landed": fighter_b['total_str']['landed'],
+            "total_strikes_attempted": fighter_b['total_str']['attempted'],
+            "total_significant_strikes_landed": fighter_b['sig_str']['landed'],
+            "total_significant_strikes_attempted": fighter_b['sig_str']['attempted'],
+            "significant_strike_percent":fighter_b['sig_str_percent'],
+            "knock-downs": fighter_b['kd']
+        }
+    }
+
+    #no td in normal table for some reason, add them later from rounds
+    grappling = {
+        "fighter_a": {
+            # "takedowns":fighter_a['td'],
+            "take_down_percent": fighter_a['td_percent'],
+            "sub_attempts": fighter_a['sub_att'],
+            "reversals": fighter_a['rev'],
+            "control_time": fighter_a['ctrl']
+        },
+        "fighter_b": {
+            # "takedowns":fighter_b['td'],
+            "take_down_percent": fighter_b['td_percent'],
+            "sub_attempts": fighter_b['sub_att'],
+            "reversals": fighter_b['rev'],
+            "control_time": fighter_b['ctrl']
+        }
+    }
+    print(fighter_a)
+    print(fighter_b)
+
+    return render_template('versus.html', fight = fight, event = event, striking = striking, grappling = grappling, meta = meta)
 
 
 @app.route('/logout')

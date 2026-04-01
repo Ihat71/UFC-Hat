@@ -7,6 +7,8 @@ import logging
 import uuid
 from my_app.plots import *
 import time
+from datetime import datetime
+import re
 #from db_setup import get_espn_stats, get_column_query 
 
 
@@ -489,5 +491,32 @@ def get_espn_stats_util(espn_url, name):
             logger.error(f'couldnt get the ground data for {name}, error: {e}')
 
     return (striking_dict, clinching_dict, ground_dict, status_code)
+
+def get_career_fights(fighter_id=2373):
+    with sq.connect(db_path) as conn:
+        conn.row_factory = sq.Row
+        db = conn.cursor()
+        fight_list = []
+        fights = db.execute('select fight_id, fighter_a, fighter_b, winner, event_id, date from fights where fighter_a = ? or fighter_b = ?', (fighter_id, fighter_id)).fetchall()
+
+        for fight in fights:
+            name_1 = db.execute('select name from fighters where fighter_id = ?', (fight['fighter_a'],)).fetchone()
+            name_2 = db.execute('select name from fighters where fighter_id = ?', (fight['fighter_b'],)).fetchone()
+            winner_name = db.execute('select name from fighters where fighter_id = ?', (fight['winner'],)).fetchone()
+            event_name = db.execute('select event_name from events where event_id = ?', (fight['event_id'],)).fetchone()
+            fight = dict(fight)
+            fight['fighter_a_name'] = name_1['name']
+            fight['fighter_b_name'] = name_2['name']
+            fight['winner_name'] = winner_name['name']
+            fight['event_name'] = event_name['event_name'] if event_name else None
+            fight['date'] = fight['date'].replace('.', '')
+            fight_list.append(fight)
+        
+        fight_list = sorted(fight_list, key=lambda x: datetime.strptime(x['date'], r"%b %d, %Y"), reverse=True)
+
+    return fight_list
+
+
+
 
 

@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import math
 import base64
+import json
 # from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 logger = logging.getLogger(__name__)
@@ -581,21 +582,78 @@ def elo_analysis(id):
     return elo_hash
 
 
-def fight_analysis(db, fight):
-    #incomplete
-    fighter_1 = {}
-    fighter_2 = {}
-    if fight['winner'] == fight['fighter_a']:
-        fighter_1['result'] = 'winner'
-        fighter_2['result'] = 'loser'
-    else:
-        fighter_1['result'] = 'loser'
-        fighter_2['result'] = 'winner'
+def fight_analysis(db, fight_id):
+    fight = db.execute("""
+        SELECT e.*, f.date, f.event_id
+        FROM fights_extended e 
+        JOIN fights f ON e.fight_id = f.fight_id 
+        WHERE e.fight_id = ?
+    """, (fight_id,)).fetchone()
 
-    fighter_1['fighter_id'], fighter_1['name'] = db.execute('select fighter_id, name from fighters where fighter_id = ?', (fight['fighter_a'],)).fetchone()
-    fighter_2['fighter_id'], fighter_2['name'] = db.execute('select fighter_id, name from fighters where fighter_id = ?', (fight['fighter_b'],)).fetchone()
 
-    return (fighter_1, fighter_2)
+    if not fight:
+        return None
+    
+    event = db.execute("""
+        select * from events where event_id = ?
+    """, (fight['event_id'],)).fetchone()
+
+    fight = dict(fight)
+    fight_data = fight['fight_data']
+
+    elo_fight = db.execute("""
+        SELECT * FROM elo_history 
+        WHERE date = ? AND (
+            (fighter_1 = ? AND fighter_2 = ?) OR 
+            (fighter_1 = ? AND fighter_2 = ?)
+        )
+    """, (
+        fight['date'],
+        fight['fighter_1'], fight['fighter_2'],
+        fight['fighter_2'], fight['fighter_1']
+    )).fetchone()
+
+    elo_fight = dict(elo_fight) if elo_fight else {}
+
+    name_1 = db.execute(
+        "SELECT * FROM fighters WHERE fighter_id = ?",
+        (fight['fighter_1'],)
+    ).fetchone()
+
+    name_2 = db.execute(
+        "SELECT * FROM fighters WHERE fighter_id = ?",
+        (fight['fighter_2'],)
+    ).fetchone()
+
+    event_name = db.execute(
+        "SELECT event_name FROM events WHERE event_id = ?",
+        (fight['event_id'],)
+    ).fetchone()
+
+    fight['fighter_a'] = dict(name_1) if name_1 else {}
+    fight['fighter_b'] = dict(name_2) if name_2 else {}
+
+    fight['event_name'] = event_name['event_name'] if event_name else None
+    fight['date'] = fight['date'].replace('.', '')
+
+    if elo_fight:
+        if elo_fight['fighter_1'] == fight['fighter_1']:
+            fight['fighter_a']['elo'] = elo_fight['elo_1']
+            fight['fighter_b']['elo'] = elo_fight['elo_2']
+            fight['fighter_a']['new_elo'] = elo_fight['new_elo_1']
+            fight['fighter_b']['new_elo'] = elo_fight['new_elo_2']
+        else:
+            fight['fighter_a']['elo'] = elo_fight['elo_2']
+            fight['fighter_b']['elo'] = elo_fight['elo_1']
+            fight['fighter_a']['new_elo'] = elo_fight['new_elo_2']
+            fight['fighter_b']['new_elo'] = elo_fight['new_elo_1']
+
+    parsed = normalize_fight(fight_data)
+    fighter_a = parsed['fighter_a']
+    fighter_b = parsed['fighter_b']
+    meta = parsed['meta']
+
+    return fight, event, fighter_a, fighter_b, meta
 
 def s_analysis(db, id):
     '''this function is responsible for making a hash to make striking data very easy to get'''
@@ -1595,3 +1653,111 @@ def update_sql_table_dynamic(df, table_name, fighter_id, conn):
 
 # total_fighting_analysis('career')
 
+# I have to do this since I cant import utilities. THIS SUCKS
+
+def clean_split(value):
+    if not value:
+        return None, None
+
+    # Split on newlines and remove empty junk
+    parts = [p.strip() for p in value.split('\n') if p.strip()]
+
+    if len(parts) >= 2:
+        return parts[0], parts[1]
+    
+    return parts[0] if parts else None, None
+
+
+def parse_of_stat(s):
+    if not s or 'of' not in s:
+        return None
+
+    try:
+        landed, attempted = s.split('of')
+        return {
+            "landed": int(landed.strip()),
+            "attempted": int(attempted.strip())
+        }
+    except:
+        return None
+
+
+def parse_percent(s):
+    if not s or s == '---':
+        return None
+    return float(s.replace('%', '').strip())
+
+
+def parse_time(s):
+    if not s or ':' not in s:
+        return None
+    
+    try:
+        minutes, seconds = s.split(':')
+        return int(minutes) * 60 + int(seconds)
+    except:
+        return None
+
+
+def parse_int(s):
+    if not s or s == '---':
+        return None
+    try:
+        return int(s)
+    except:
+        return None
+
+def normalize_fight(fight):
+    #make normal df for analysis and then aggregate_df for presentation
+    fight = json.loads(fight)
+    f1 = fight['fighter_1']
+    f2 = fight['fighter_2']
+
+    fighter_a = {}
+    fighter_b = {}
+
+    for key in f1:
+        # keep identity fields
+        if key in ['name', 'fighter_id']:
+            fighter_a[key] = f1[key]
+            fighter_b[key] = f2[key]
+            continue
+
+        raw_value = f1[key]
+
+        a_val, b_val = clean_split(raw_value)
+
+        # ---------- TYPE HANDLING ----------
+        if key in ['sig_str', 'total_str', 'head', 'body', 'leg', 'distance', 'clinch', 'ground']:
+            fighter_a[key] = parse_of_stat(a_val)
+            fighter_b[key] = parse_of_stat(b_val)
+
+        elif key in ['sig_str_percent', 'td_percent']:
+            fighter_a[key] = parse_percent(a_val)
+            fighter_b[key] = parse_percent(b_val)
+
+        elif key == 'ctrl':
+            fighter_a[key] = parse_time(a_val)
+            fighter_b[key] = parse_time(b_val)
+
+        else:  # kd, sub_att, rev, etc.
+            fighter_a[key] = parse_int(a_val)
+            fighter_b[key] = parse_int(b_val)
+
+    # ---------- FINAL STRUCTURE ----------
+    return {
+        "fighter_a": fighter_a,
+        "fighter_b": fighter_b,
+        "meta": {
+            "winner": fight.get("winner"),
+            "winner_id": fight.get("winner_id"),
+            "method": fight.get("method").strip() if fight.get("method") else None,
+            "round": parse_int(fight.get("round")),
+            "time": fight.get("time"),
+            "weight_class": fight.get("weight_class"),
+            "bonus": fight.get("bonus"),
+            "title_fight": fight.get("title_fight"),
+            "date": fight.get("date"),
+            "fight_id": fight.get("fight_id")
+        }
+    }

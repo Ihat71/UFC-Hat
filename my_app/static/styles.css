@@ -29,7 +29,7 @@ nav .navbar-brand .green
     color: #2e944b;
 }
 
-h1, h2, h3 {
+h1, h2, h3, h4 {
     color: aliceblue;
 }
 
@@ -125,7 +125,72 @@ graph-div {
     max-height: 500px;
 }
 
+.fight-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 10px;
+    justify-items: center;
+    margin-top: 30px;
+}
+
+.fight-card {
+    border: 2px solid black;
+    border-radius: 10px;
+    width: 340px;
+    text-align: center;
+    padding: 10px;
+    transition: all 0.2s ease;
+    background-color: #36454F;
+    color:aliceblue;
+    transition: all 1s ease;
+}
+
+.fight-card h5 {
+    color: pink;
+}
+
+.fight-card:hover {
+    border-color: #1e00ff; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    transition: all 1s ease;
+}
+
+.fight-card:hover .winner {
+    color: lime;
+}
+
+.fight-card:hover .loser {
+    color: red;
+}
+
+/* matchups */
 
 
+.fighter-column {
+    flex: 1;
+    position: relative;
+    text-align: center;
+}
 
+.fighter-column img {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 10px;
+    border-style: solid;
+    border-color: aliceblue;
+}
 
+.fighter-column input {
+    width: 90%;
+    padding: 10px;
+    font-size: 16px;
+    border: 2px solid #ccc;
+    border-radius: 6px;
+    margin-bottom: 5px;
+}
+
+.fighter a {
+    color: pink;
+}

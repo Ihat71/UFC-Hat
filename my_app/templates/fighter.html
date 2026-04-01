@@ -5,6 +5,17 @@
 {% endblock %}
 
 {% block main %}
+
+    <!-- <style>
+    .fight-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 20px;
+    justify-items: center;
+    margin-top: 30px;
+    }
+    </style> -->
+
     <div>
         <div>
             {% if fighter['picture'] %}
@@ -584,6 +595,33 @@
                 </div>
             </div>
             {% elif selection == "record" %}
+                <div class="fight-grid">
+                    {% for fight in fights %}
+                        <div class="bg-dark rounded fight-card">
+                            <a href="/versus/{{fight['fight_id']}}">
+                                <h5>
+                                    {% if fight['fighter_a'] == fight['winner'] %}
+                                    <div class="winner">{{ fight['fighter_a_name'] }}</div>
+                                    vs
+                                    <div class="loser">{{ fight['fighter_b_name'] }}</div>
+                                    {% else %}
+                                    <div class="loser">{{ fight['fighter_a_name'] }}</div>
+                                    vs
+                                    <div class="winner">{{ fight['fighter_b_name'] }}</div>
+                                    {% endif %}
+                                </h5>
+
+                                <p>
+                                    <strong>{{ fight['event_name'] }}</strong>
+                                </p>
+
+                                <p>
+                                    {{ fight['date'] }}
+                                </p>
+                            </a>
+                        </div>
+                    {% endfor %}
+                </div>
             {% else %}
             {% endif %}
         </div>

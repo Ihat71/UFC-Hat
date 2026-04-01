@@ -5,19 +5,209 @@
 {% endblock %}
 
 {% block main %}
-    <h1>{{fighter_1['name']}} VS {{fighter_2['name']}}</h1>
-    <table class="table table-dark" align="center">
-        <thead>
-            <tr>
-                <th>{{fighter_1['name']}}</th>
-                <th>{{fighter_2['name']}}</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>{{ fighter_1['result'] }}</td>
-                <td>{{ fighter_2['result'] }}</td>
-            </tr>
-        </tbody>
-    </table>
+    <style>
+    </style>
+
+    <form method="POST" action="/versus">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    </form>
+
+    <div class = "container">
+        <div class="d-flex flex-column align-items-center justify-content-center">
+            <div class="d-flex flex-row p-4 bg-dark text-white rounded-4 shadow">
+                <h1>{{fight['fighter_a']['name']}} VS {{fight['fighter_b']['name']}}</h1>
+            </div>
+        </div>
+
+        <div class="d-flex flex-row align-items-center justify-content-center mt-5">
+            <div class="d-flex flex-col p-4 bg-dark text-white rounded-4 shadow mx-3 position-relative">
+                {% if fight['fighter_a']['fighter_id'] == fight['winner_id'] %}
+                <span class="position-absolute top-0 end-0 m-2 badge bg-success">
+                    Winner
+                </span>
+                {% else %}
+                <span class="position-absolute top-0 end-0 m-2 badge bg-danger">
+                    Loser
+                </span>
+                {% endif %}
+                <div class="fighter-column fighter">
+                    {% if fight['fighter_a']['picture'] %}
+                        <img src="{{ fight['fighter_a']['picture'] }}">
+                    {% endif %}
+                    <h3><a href="/fighter/{{ fight['fighter_a'].fighter_id }}">{{ fight['fighter_a'].name }}</a></h3>
+
+                    <div class="fighter-stats mt-3">
+                        <ul class="list-group">
+                            <li>
+                                <strong>Height: {{fight['fighter_a']['weight']}}</strong>
+                            </li>                            
+                            <li>
+                                <strong>Weight: {{fight['fighter_a']['height']}}</strong>
+                            </li>                            
+                            <li>
+                                <strong>Reach: {{fight['fighter_a']['reach']}}</strong>
+                            </li>
+                            <li>
+                                <strong>Team: {{fight['fighter_a']['team'] | title()}}</strong>
+                            </li>
+                            <li>
+                                <strong>Birthday: {{fight['fighter_a']['birthday']}}</strong>
+                            </li>                            
+                            <li>
+                                <strong>Country: {{fight['fighter_a']['country']}}</strong>
+                            </li>                            
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        
+
+            <div class="d-flex flex-col p-4 bg-dark text-white rounded-4 shadow mx-3 position-relative">
+                {% if fight['fighter_b']['fighter_id'] == fight['winner_id'] %}
+                <span class="position-absolute top-0 start-0 m-2 badge bg-success">
+                    Winner
+                </span>
+                {% else %}
+                <span class="position-absolute top-0 start-0 m-2 badge bg-danger">
+                    Loser
+                </span>
+                {% endif %}
+                <div class="fighter-column fighter">
+                    {% if fight['fighter_b']['picture'] %}
+                        <img src="{{ fight['fighter_b']['picture'] }}">
+                    {% endif %}
+                    <h3><a href="/fighter/{{ fight['fighter_b'].fighter_id }}">{{ fight['fighter_b'].name }}</a></h3>
+
+                    <div class="fighter-stats mt-3">
+                        <ul class="list-group">
+                            <li>
+                                <strong>Height: {{fight['fighter_a']['weight']}}</strong>
+                            </li>                            
+                            <li>
+                                <strong>Weight: {{fight['fighter_a']['height']}}</strong>
+                            </li>                            
+                            <li>
+                                <strong>Reach: {{fight['fighter_a']['reach']}}</strong>
+                            </li>
+                            <li>
+                                <strong>Team: {{fight['fighter_b']['team'] | title()}}</strong>
+                            </li>
+                            <li>
+                                <strong>Birthday: {{fight['fighter_b']['birthday']}}</strong>
+                            </li>                            
+                            <li>
+                                <strong>Country: {{fight['fighter_b']['country']}}</strong>
+                            </li>                            
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="container mt-5">
+            <div class="container mt-2 p-4 bg-dark text-white rounded-4 shadow justify-content-center">
+                <div class="d-flex justify-content-center mb-3">
+                    <button class="btn btn-outline-light mx-1" onclick="showTab('result')">Result</button>
+                    <button class="btn btn-outline-light mx-1" onclick="showTab('striking')">Striking</button>
+                    <button class="btn btn-outline-light mx-1" onclick="showTab('grappling')">Grappling</button>
+                </div>
+                <div id="result" class="tab-content mt-5">
+                    <h3 class="text-center mb-4">Result</h3>
+
+                    <div class="d-flex flex-row justify-content-center">
+                        <div class="d-flex flex-column p-4 text-white rounded-4 shadow">
+                            <h4>Fight Result</h4> 
+                            <ul class="list-group">
+                                <li>{{ fight['method']}}</li>
+                                <li>Round {{ fight['round']}}, {{ fight['time']}}</li>
+                                {% if fight['bonus'] %}
+                                <li>{{ fight['bonus'] | title()}}</li>
+                                {% endif %}
+                                {% if fight['title_fight'] != 'no' %}
+                                <li>🏆</li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                        <div class="d-flex flex-column p-4 text-white rounded-4 shadow">
+                            <h4>Elo Progression</h4>
+                            <ul class="list-group">
+                                <li>{{fight['fighter_a']['name']}}: {{fight['fighter_a']['elo']}} to {{fight['fighter_a']['new_elo']}} ({{fight['fighter_a']['elo_diff']}})</li>
+                                <li>{{fight['fighter_b']['name']}}: {{fight['fighter_b']['elo']}} to {{fight['fighter_b']['new_elo']}} ({{fight['fighter_b']['elo_diff']}})</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="d-flex flex-column p-4 bg-dark text-white rounded-4 shadow justify-content-center align-items-center">
+                        <h4>Event Details</h4>
+                        <ul class="list-group">
+                            <li>{{ event.event_name }}</li>
+                            <li>{{ event.event_location }}</li>
+                            <li>{{ event.event_date }}</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div id="striking" class="tab-content d-none mt-5">
+                    <h4>Striking</h4>
+                    <div class="p-4 mt-3 bg-dark shadow rounded-4 d-flex justify-content-center" style="display:block;">
+                        <table class="table-dark text-center">
+                            <thead>
+                                <tr>
+                                    <th class="fighter-blue">{{ fight['fighter_a'].name }}</th>
+                                    <th>STAT</th>
+                                    <th class="fighter-red">{{ fight['fighter_b'].name }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for key, val in striking['fighter_a'].items() %}
+                                    <tr>
+                                        <td class="fighter-blue">{{ val }}</td>
+                                        <td>{{ key|replace("_", " ")|replace("percent", "%")|title() }}</td>
+                                        <td class="fighter-red">{{ striking['fighter_b'][key] }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="grappling" class="tab-content d-none">
+                    <h4>Grappling</h4>
+                    <div class="p-4 mt-3 bg-dark shadow rounded-4 d-flex justify-content-center" style="display:block;">
+                        <table class="text-center">
+                            <thead>
+                                <tr>
+                                    <th class="fighter-blue">{{ fight['fighter_a'].name }}</th>
+                                    <th>STAT</th>
+                                    <th class="fighter-red">{{ fight['fighter_b'].name }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for key, val in grappling['fighter_a'].items() %}
+                                    <tr>
+                                        <td class="fighter-blue">{{ val }}</td>
+                                        <td>{{ key|replace("_", " ")|replace("percent", "%")|title() }}</td>
+                                        <td class="fighter-red">{{ grappling['fighter_b'][key] }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+
+    <script id="tab-switcher">
+    function showTab(tabId) {
+        // hide all
+        document.querySelectorAll('.tab-content').forEach(div => {
+            div.classList.add('d-none');
+        });
+
+        // show selected
+        document.getElementById(tabId).classList.remove('d-none');
+    }
+    </script>
+
 {% endblock %}

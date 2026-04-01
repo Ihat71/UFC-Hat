@@ -30,7 +30,7 @@ def setup():
     fight_scraper(events_url)
     ...
 def update():
-    update_records_and_fights()
+    update_records_and_fights() #should also run fight_scraper to add the fights for each event yknow
     update_advanced_stats()
     # all_fighters_gctrl()
     update_fighters_aggregate_stats()
@@ -45,10 +45,9 @@ def tests():
     #total_fighting_analysis('career')
 
 def main():
-    setup()
-    # setup()
-    # create_aggregate_tables()
-    #tests()
+    #setup()
+    update()
+
     
 
 
