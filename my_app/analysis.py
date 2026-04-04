@@ -8,6 +8,7 @@ import pandas as pd
 import math
 import base64
 import json
+from collections import defaultdict
 # from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 logger = logging.getLogger(__name__)
@@ -648,12 +649,11 @@ def fight_analysis(db, fight_id):
             fight['fighter_a']['new_elo'] = elo_fight['new_elo_2']
             fight['fighter_b']['new_elo'] = elo_fight['new_elo_1']
 
-    parsed = normalize_fight(fight_data)
+    parsed = normalize_fight(db, fight_id)
     fighter_a = parsed['fighter_a']
     fighter_b = parsed['fighter_b']
-    meta = parsed['meta']
 
-    return fight, event, fighter_a, fighter_b, meta
+    return fight, event, fighter_a, fighter_b
 
 def s_analysis(db, id):
     '''this function is responsible for making a hash to make striking data very easy to get'''
@@ -1655,22 +1655,22 @@ def update_sql_table_dynamic(df, table_name, fighter_id, conn):
 
 # I have to do this since I cant import utilities. THIS SUCKS
 
-def clean_split(value):
-    if not value:
-        return None, None
+# def clean_split(value):
+#     if not value:
+#         return 0, 0
 
-    # Split on newlines and remove empty junk
-    parts = [p.strip() for p in value.split('\n') if p.strip()]
+#     # Split on newlines and remove empty junk
+#     parts = [p.strip() for p in value.split('\n') if p.strip()]
 
-    if len(parts) >= 2:
-        return parts[0], parts[1]
+#     if len(parts) >= 2:
+#         return parts[0], parts[1]
     
-    return parts[0] if parts else None, None
+#     return parts[0] if parts else 0, 0
 
 
 def parse_of_stat(s):
     if not s or 'of' not in s:
-        return None
+        return {"landed": 0, "attempted": 0}
 
     try:
         landed, attempted = s.split('of')
@@ -1679,85 +1679,130 @@ def parse_of_stat(s):
             "attempted": int(attempted.strip())
         }
     except:
-        return None
+        return {"landed": 0, "attempted": 0}
 
 
 def parse_percent(s):
     if not s or s == '---':
-        return None
+        return 0
     return float(s.replace('%', '').strip())
 
 
 def parse_time(s):
     if not s or ':' not in s:
-        return None
+        return 0
     
     try:
         minutes, seconds = s.split(':')
         return int(minutes) * 60 + int(seconds)
     except:
-        return None
+        return 0
 
 
 def parse_int(s):
     if not s or s == '---':
-        return None
+        return 0
     try:
         return int(s)
     except:
-        return None
+        return 0
 
-def normalize_fight(fight):
+def normalize_fight(db, fight_id):
     #make normal df for analysis and then aggregate_df for presentation
-    fight = json.loads(fight)
-    f1 = fight['fighter_1']
-    f2 = fight['fighter_2']
+    totals = db.execute('select * from rounds where fight_id = ? and stat_type = ?', (fight_id, "totals")).fetchall()
+    sig_strikes = db.execute('select * from rounds where fight_id = ? and stat_type = ? and stat not in (?, ?)  ', (fight_id, "sig_strikes", "sig_str", "sig_str_percent")).fetchall()
 
-    fighter_a = {}
-    fighter_b = {}
+    f1, f2 = round_aggregation(db, totals, sig_strikes)
 
-    for key in f1:
-        # keep identity fields
-        if key in ['name', 'fighter_id']:
-            fighter_a[key] = f1[key]
-            fighter_b[key] = f2[key]
-            continue
+    # fighter_a = {}
+    # fighter_b = {}
 
-        raw_value = f1[key]
+    # for key in f1:
+    #     # keep identity fields
+    #     if key in ['name', 'fighter_id']:
+    #         fighter_a[key] = f1[key]
+    #         fighter_b[key] = f2[key]
+    #         continue
 
-        a_val, b_val = clean_split(raw_value)
+    #     raw_value = f1[key]
 
-        # ---------- TYPE HANDLING ----------
-        if key in ['sig_str', 'total_str', 'head', 'body', 'leg', 'distance', 'clinch', 'ground']:
-            fighter_a[key] = parse_of_stat(a_val)
-            fighter_b[key] = parse_of_stat(b_val)
+    #     a_val, b_val = clean_split(raw_value)
 
-        elif key in ['sig_str_percent', 'td_percent']:
-            fighter_a[key] = parse_percent(a_val)
-            fighter_b[key] = parse_percent(b_val)
+    #     # ---------- TYPE HANDLING ----------
+    #     if key in ['sig_str', 'total_str', 'head', 'body', 'leg', 'distance', 'clinch', 'ground']:
+    #         fighter_a[key] = parse_of_stat(a_val)
+    #         fighter_b[key] = parse_of_stat(b_val)
 
-        elif key == 'ctrl':
-            fighter_a[key] = parse_time(a_val)
-            fighter_b[key] = parse_time(b_val)
+    #     elif key in ['sig_str_percent', 'td_percent']:
+    #         fighter_a[key] = parse_percent(a_val)
+    #         fighter_b[key] = parse_percent(b_val)
 
-        else:  # kd, sub_att, rev, etc.
-            fighter_a[key] = parse_int(a_val)
-            fighter_b[key] = parse_int(b_val)
+    #     elif key == 'ctrl':
+    #         fighter_a[key] = parse_time(a_val)
+    #         fighter_b[key] = parse_time(b_val)
+
+    #     else:  # kd, sub_att, rev, etc.
+    #         fighter_a[key] = parse_int(a_val)
+    #         fighter_b[key] = parse_int(b_val)
 
     # ---------- FINAL STRUCTURE ----------
     return {
-        "fighter_a": fighter_a,
-        "fighter_b": fighter_b,
-        "meta": {
-            "winner": fight.get("winner"),
-            "winner_id": fight.get("winner_id"),
-            "method": fight.get("method").strip() if fight.get("method") else None,
-            "round": parse_int(fight.get("round")),
-            "time": fight.get("time"),
-            "weight_class": fight.get("weight_class"),
-            "bonus": fight.get("bonus"),
-            "title_fight": fight.get("title_fight"),
-            "date": fight.get("date"),
-            "fight_id": fight.get("fight_id")
-        }
+        "fighter_a": f1,
+        "fighter_b": f2
     }
+
+def round_aggregation(db, totals, sig_strikes):
+    f1 = defaultdict(int)
+    f2 = defaultdict(int)
+
+    f1['name'] = totals[0]['fighter_1']
+    f2['name'] = totals[0]['fighter_2']
+    print(f1['name'])
+
+    id_1 = db.execute('select fighter_id from fighters where name = ?', (f1['name'],)).fetchone()
+    id_2 = db.execute('select fighter_id from fighters where name = ?', (f2['name'],)).fetchone()
+
+    f1['fighter_id'] = id_1['fighter_id']
+    f2['fighter_id'] = id_2['fighter_id']
+
+
+    for total in totals:
+        if total['fighter_1'] == f1['name']:
+            continue
+
+        stat = total['stat']
+        if "percent" in stat:
+            continue
+        if 'of' in total['fighter_1']:
+            parsed_f1 = parse_of_stat(total['fighter_1'])
+            f1[f'{stat}_landed'] += parsed_f1['landed'] 
+            f1[f'{stat}_attempted'] += parsed_f1['attempted'] 
+            parsed_f2 = parse_of_stat(total['fighter_2'])
+            f2[f'{stat}_landed'] += parsed_f2['landed'] 
+            f2[f'{stat}_attempted'] += parsed_f2['attempted'] 
+        elif stat == 'ctr':
+            f1[stat] += parse_time(total['fighter_1'])
+            f2[stat] += parse_time(total['fighter_2'])
+        else:
+            f1[stat] += parse_int(total['fighter_1'])
+            f2[stat] += parse_int(total['fighter_2'])
+
+
+    f1['sig_str_percent'] = round(f1['sig_str_landed'] / f1['sig_str_attempted'], 2) * 100 if f1['sig_str_attempted'] != 0 else 0
+    f2['sig_str_percent'] = round(f2['sig_str_landed'] / f2['sig_str_attempted'], 2) * 100 if f2['sig_str_attempted'] != 0 else 0
+
+    f1['td_percent'] = round(f1['td_landed'] / f1['td_attempted'], 2) * 100 if f1['td_attempted'] != 0 else 0
+    f2['td_percent'] = round(f2['td_landed'] / f2['td_attempted'], 2) * 100 if f2['td_attempted'] != 0 else 0
+
+
+    for sig in sig_strikes:
+        stat = sig['stat']
+        parsed_f1 = parse_of_stat(sig['fighter_1'])
+        f1[f'{stat}_landed'] += parsed_f1['landed']
+        f1[f'{stat}_attempted'] += parsed_f1['attempted']
+        parsed_f2 = parse_of_stat(sig['fighter_2'])
+        f2[f'{stat}_landed'] += parsed_f2['landed']
+        f2[f'{stat}_attempted'] += parsed_f2['attempted']
+
+    
+    return f1, f2

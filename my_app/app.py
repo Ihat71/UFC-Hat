@@ -463,24 +463,26 @@ def versus(fight_id):
     conn, db = get_db()
 
     #gotta fix fighter_a and fighter_b to give accurate data from rounds table and that's about it
-    fight, event, fighter_a, fighter_b, meta = fight_analysis(db, fight_id)
+    fight, event, fighter_a, fighter_b = fight_analysis(db, fight_id)
     fight['fighter_a']['elo_diff'] = fight['fighter_a']['new_elo'] - fight['fighter_a']['elo']
     fight['fighter_b']['elo_diff'] = fight['fighter_b']['new_elo'] - fight['fighter_b']['elo']
 
     striking = {
         "fighter_a": {
-            "total_strikes_landed": fighter_a['total_str']['landed'],
-            "total_strikes_attempted": fighter_a['total_str']['attempted'],
-            "total_significant_strikes_landed": fighter_a['sig_str']['landed'],
-            "total_significant_strikes_attempted": fighter_a['sig_str']['attempted'],
+            "name": fighter_a['name'],
+            "total_strikes_landed": fighter_a['total_str_landed'],
+            "total_strikes_attempted": fighter_a['total_str_attempted'],
+            "total_significant_strikes_landed": fighter_a['sig_str_landed'],
+            "total_significant_strikes_attempted": fighter_a['sig_str_attempted'],
             "significant_strike_percent":fighter_a['sig_str_percent'],
-            "Knock-downs": fighter_a['kd']
+            "knock-downs": fighter_a['kd']
         },
         "fighter_b": {
-            "total_strikes_landed": fighter_b['total_str']['landed'],
-            "total_strikes_attempted": fighter_b['total_str']['attempted'],
-            "total_significant_strikes_landed": fighter_b['sig_str']['landed'],
-            "total_significant_strikes_attempted": fighter_b['sig_str']['attempted'],
+            "name": fighter_b['name'],
+            "total_strikes_landed": fighter_b['total_str_landed'],
+            "total_strikes_attempted": fighter_b['total_str_attempted'],
+            "total_significant_strikes_landed": fighter_b['sig_str_landed'],
+            "total_significant_strikes_attempted": fighter_b['sig_str_attempted'],
             "significant_strike_percent":fighter_b['sig_str_percent'],
             "knock-downs": fighter_b['kd']
         }
@@ -490,23 +492,28 @@ def versus(fight_id):
     grappling = {
         "fighter_a": {
             # "takedowns":fighter_a['td'],
+            "name": fighter_a['name'],
+            "takedowns":fighter_a['td_landed'],
             "take_down_percent": fighter_a['td_percent'],
             "sub_attempts": fighter_a['sub_att'],
             "reversals": fighter_a['rev'],
-            "control_time": fighter_a['ctrl']
+            "control_time": fighter_a['ctr']
         },
         "fighter_b": {
             # "takedowns":fighter_b['td'],
+            "name": fighter_b['name'],
+            "takedowns":fighter_b['td_landed'],
             "take_down_percent": fighter_b['td_percent'],
             "sub_attempts": fighter_b['sub_att'],
             "reversals": fighter_b['rev'],
-            "control_time": fighter_b['ctrl']
+            "control_time": fighter_b['ctr']
         }
     }
+
     print(fighter_a)
     print(fighter_b)
 
-    return render_template('versus.html', fight = fight, event = event, striking = striking, grappling = grappling, meta = meta)
+    return render_template('versus.html', fight = fight, event = event, striking = striking, grappling = grappling)
 
 
 @app.route('/logout')

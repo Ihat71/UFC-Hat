@@ -6,6 +6,21 @@
 
 {% block main %}
     <style>
+    .better {
+        background-color: turquoise;
+        color: black;
+        font-weight: bold;
+    }
+
+    .worse {
+        background-color: #760000;
+        color: white;
+    }
+
+    .neutral {
+        background-color: #202020;
+        color: white;
+    }
     </style>
 
     <form method="POST" action="/versus">
@@ -152,17 +167,19 @@
                         <table class="table-dark text-center">
                             <thead>
                                 <tr>
-                                    <th class="fighter-blue">{{ fight['fighter_a'].name }}</th>
+                                    <th class="fighter-blue">{{ striking['fighter_a'].name }}</th>
                                     <th>STAT</th>
-                                    <th class="fighter-red">{{ fight['fighter_b'].name }}</th>
+                                    <th class="fighter-red">{{ striking['fighter_b'].name }}</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for key, val in striking['fighter_a'].items() %}
+                                {% for key, val in striking['fighter_a'].items() if not key == "name" %}
+                                    {% set a = val %}
+                                    {% set b = striking['fighter_b'][key] %}
                                     <tr>
-                                        <td class="fighter-blue">{{ val }}</td>
+                                        <td class="{% if a > b %}better{% elif a < b %}worse{% elif a == b %}neutral{% endif %}">{{ a }}</td>
                                         <td>{{ key|replace("_", " ")|replace("percent", "%")|title() }}</td>
-                                        <td class="fighter-red">{{ striking['fighter_b'][key] }}</td>
+                                        <td class="{% if b > a %}better{% elif b < a %}worse{% elif a == b %}neutral{% endif %}">{{ b }}</td>
                                     </tr>
                                 {% endfor %}
                             </tbody>
@@ -176,24 +193,26 @@
                         <table class="text-center">
                             <thead>
                                 <tr>
-                                    <th class="fighter-blue">{{ fight['fighter_a'].name }}</th>
+                                    <th class="fighter-blue">{{ grappling['fighter_a'].name }}</th>
                                     <th>STAT</th>
-                                    <th class="fighter-red">{{ fight['fighter_b'].name }}</th>
+                                    <th class="fighter-red">{{ grappling['fighter_b'].name }}</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for key, val in grappling['fighter_a'].items() %}
+                                {% for key, val in grappling['fighter_a'].items() if not key == "name" %}
+                                    {% set a = val %}
+                                    {% set b = grappling['fighter_b'][key] %}
                                     <tr>
-                                        <td class="fighter-blue">{{ val }}</td>
+                                        <td class="{% if a > b %}better{% elif a < b %}worse{% elif a == b %}neutral{% endif %}">{{ a }}</td>
                                         <td>{{ key|replace("_", " ")|replace("percent", "%")|title() }}</td>
-                                        <td class="fighter-red">{{ grappling['fighter_b'][key] }}</td>
+                                        <td class="{% if b > a %}better{% elif b < a %}worse{% elif a == b %}neutral{% endif %}">{{ b }}</td>
                                     </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
                 </div>
-                
+
             </div>
         </div>
     </div>
