@@ -18,7 +18,7 @@ import random, time
 from analysis import *
 from utilities import easy_espn_fights_getter
 
-db_path = (Path(__file__).parent).parent / "data" / "testing.db"
+db_path = (Path(__file__).parent).parent / "data" / "ufc-hat.db"
 events_url = "http://ufcstats.com/statistics/events/completed?page=all"
 
 #dont forget traceback.print_exc() using import traceback when you log bossman
@@ -293,7 +293,7 @@ def update_records_and_fights():
                 if not skip_b:
                     espn_update(espn_url_b, id_b, fighter_b, date, conn)
 
-
+    return event_list
 
 
                 #note to self: also update the draws and no contests, also add some logger

@@ -8,7 +8,7 @@ import sqlite3 as sq
 logger = logging.getLogger(__name__)
 
 
-db_path = (Path(__file__).parent).parent / "data" / "testing.db"
+db_path = (Path(__file__).parent).parent / "data" / "ufc-hat.db"
 
 def get_dates():
     ordered_ufc_event_dates = []
@@ -161,5 +161,5 @@ def elo_history_table(fighter_ids, initial_ratings, new_ratings, winner, method,
 
 # if __name__ == "__main__":
 #     main()
-import os
-print(os.environ.get("SECRET_KEY"))
+# import os
+# print(os.environ.get("SECRET_KEY"))

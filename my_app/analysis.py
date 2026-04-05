@@ -12,7 +12,7 @@ from collections import defaultdict
 # from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 logger = logging.getLogger(__name__)
-db_path = (Path(__file__).parent).parent / "data" / "testing.db"
+db_path = (Path(__file__).parent).parent / "data" / "ufc-hat.db"
 
 LEAGUE_AVGS = {
     'ts_acc':0.53,
@@ -129,8 +129,18 @@ def career_analysis(db, id, cached=False):
     
     records = db.execute('select * from records where fighter_1 = ?', (id,)).fetchall()
     fights = db.execute('select * from fights where fighter_a = ? or fighter_b = ?', (id, id)).fetchall()
-    sorted_records = sorted(records, key=lambda x: datetime.strptime(x['date'], '%b. %d, %Y'), reverse=True)
-    sorted_fights = sorted(fights, key=lambda x: datetime.strptime(x['date'], '%b. %d, %Y'), reverse=True)
+    fmts = ['%b. %d, %Y', '%b %d, %Y', '%B %d, %Y']
+
+    def _try_format(s, fmt):
+        try:
+            datetime.strptime(s, fmt)
+            return True
+        except ValueError:
+            return False
+    
+    sorted_records = sorted(records, key=lambda x: next(datetime.strptime(x['date'], fmt) for fmt in fmts if _try_format(x['date'], fmt)), reverse=True)
+    sorted_fights = sorted(fights, key=lambda x: next(datetime.strptime(x['date'], fmt) for fmt in fmts if _try_format(x['date'], fmt)), reverse=True)
+
 
     if not records:
         return None

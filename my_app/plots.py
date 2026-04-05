@@ -9,7 +9,7 @@ import numpy as np
 import plotly.graph_objects as go
 from my_app.analysis import get_scaled_attributes
 
-db_path = Path(__file__).parent.parent / 'data' / 'testing.db'
+db_path = (Path(__file__).parent).parent / "data" / "ufc-hat.db"
 
 #this python script is for parsing and then visualizing fight data
 def elo_history_plot(fighter_id):

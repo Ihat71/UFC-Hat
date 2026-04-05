@@ -30,12 +30,15 @@ def setup():
     fight_scraper(events_url)
     ...
 def update():
-    update_records_and_fights() #should also run fight_scraper to add the fights for each event yknow
+    event_list = update_records_and_fights() #should also run fight_scraper to add the fights for each event yknow
     update_advanced_stats()
     # all_fighters_gctrl()
     update_fighters_aggregate_stats()
     # update_fighters_threaded()
     # update_fighters_threaded(type=2)
+
+    events = [row[0] for row in event_list]
+    fight_scraper(events)
     ...
 
 def tests():

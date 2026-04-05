@@ -10,4 +10,4 @@ import base64
 # from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 logger = logging.getLogger(__name__)
-db_path = (Path(__file__).parent).parent / "data" / "testing.db"
+db_path = (Path(__file__).parent).parent / "data" / "ufc-hat.db"

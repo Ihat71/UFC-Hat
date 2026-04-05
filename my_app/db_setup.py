@@ -12,7 +12,7 @@ from utilities import *
 logger = logging.getLogger(__name__)
 
 
-db_path = (Path(__file__).parent).parent / "data" / "testing.db"
+db_path = (Path(__file__).parent).parent / "data" / "ufc-hat.db"
 
 def db_tables_setup():
     with sq.connect(db_path) as conn:
