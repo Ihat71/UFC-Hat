@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup
 import requests
+import os
 from pathlib import Path
 import sqlite3 as sq
 import math
@@ -18,7 +19,8 @@ import random, time
 from analysis import *
 from utilities import easy_espn_fights_getter
 
-db_path = (Path(__file__).parent).parent / "data" / "ufc-hat.db"
+base_dir= os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+db_path= os.path.join(base_dir, "data", "ufc-hat.db")
 events_url = "http://ufcstats.com/statistics/events/completed?page=all"
 
 #dont forget traceback.print_exc() using import traceback when you log bossman

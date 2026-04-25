@@ -12,7 +12,8 @@ from utilities import *
 logger = logging.getLogger(__name__)
 
 
-db_path = (Path(__file__).parent).parent / "data" / "ufc-hat.db"
+base_dir= os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+db_path= os.path.join(base_dir, "data", "ufc-hat.db")
 
 def db_tables_setup():
     with sq.connect(db_path) as conn:

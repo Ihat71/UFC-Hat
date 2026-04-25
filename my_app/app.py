@@ -46,7 +46,8 @@ app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
-db_path = (Path(__file__).parent).parent / "data" / "ufc-hat.db"
+base_dir= os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+db_path= os.path.join(base_dir, "data", "ufc-hat.db")
 
 weight_hash = {
     'p4p':None,

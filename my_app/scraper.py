@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup
 import string
 import requests
+import os
 from pathlib import Path
 import sqlite3 as sq
 from datetime import datetime
@@ -14,7 +15,8 @@ import json
 logger = logging.getLogger(__name__)
 
 
-db_path = (Path(__file__).parent).parent / "data" / "ufc-hat.db"
+base_dir= os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+db_path= os.path.join(base_dir, "data", "ufc-hat.db")
 
 ip_list = [
     "2001:0db8:85a3:0000:0000:8a2e:0370:7334",

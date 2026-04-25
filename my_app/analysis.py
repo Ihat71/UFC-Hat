@@ -1,5 +1,6 @@
 import sqlite3 as sq
 import logging
+import os
 from pathlib import Path
 import sqlite3 as sq
 from datetime import datetime
@@ -12,7 +13,8 @@ from collections import defaultdict
 # from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 logger = logging.getLogger(__name__)
-db_path = (Path(__file__).parent).parent / "data" / "ufc-hat.db"
+base_dir= os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+db_path= os.path.join(base_dir, "data", "ufc-hat.db")
 
 LEAGUE_AVGS = {
     'ts_acc':0.53,
