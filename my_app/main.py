@@ -2,13 +2,10 @@ import logging
 from db_setup import *
 from db_update import *
 from scraper import *
+from config import Config
+from logging_config import setup_logging
 
-logging.basicConfig(
-    filemode="w",  #w overwrites, a appends
-    filename='main.log',
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-) 
+setup_logging(Config)
 
 logger = logging.getLogger(__name__)
 
