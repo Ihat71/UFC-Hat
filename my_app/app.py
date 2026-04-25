@@ -421,8 +421,8 @@ def fighter(id):
 
     elo_hash = elo_analysis(id)
     career_hash = career_analysis(db=db, id=id, cached=False) #return to true once ur done
-    career_hash['finish_rate'] = f'{career_hash['finish_rate'] * 100 : .1f}%'
-    career_hash['win_rate'] = f'{career_hash['win_rate'] * 100 : .1f}%'
+    career_hash['finish_rate'] = f"{career_hash['finish_rate'] * 100 : .1f}%"
+    career_hash['win_rate'] = f"{career_hash['win_rate'] * 100 : .1f}%"
     data_hash = career_hash
     fights = get_career_fights()
     #print(fights)
