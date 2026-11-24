@@ -48,7 +48,8 @@ service = ApiService(repository=repository, weight_hash=weight_hash)
 
 @app.after_request
 def after_request(response):
-    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Cache-Contro" \
+    "l"] = "no-cache, no-store, must-revalidate"
     response.headers["Expires"] = 0
     response.headers["Pragma"] = "no-cache"
     return response
@@ -175,6 +176,11 @@ def fighter(id):
 def versus(fight_id):
     payload = service.versus_data(fight_id)
     return render_template("versus.html", **payload)
+
+@app.route("/memory-game")
+@login_required
+def memory_game():
+    return render_template("memory_game.html")
 
 
 @app.route("/logout")
