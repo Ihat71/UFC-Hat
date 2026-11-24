@@ -176,6 +176,11 @@ def versus(fight_id):
     payload = service.versus_data(fight_id)
     return render_template("versus.html", **payload)
 
+@app.route("/memory-game")
+@login_required
+def memory_game():
+    return render_template("memory_game.html")
+
 
 @app.route("/logout")
 @login_required
